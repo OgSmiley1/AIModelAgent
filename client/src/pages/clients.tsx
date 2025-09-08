@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { ProfileCard } from "@/components/clients/profile-card";
+import { EnhancedProfileCard } from "@/components/clients/enhanced-profile-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, Plus, Search, Filter, UserCheck, Star, AlertCircle } from "lucide-react";
+import { Users, Plus, Search, Filter, UserCheck, Star, AlertCircle, TrendingUp, Target, Brain, Zap, Clock, Edit, Save, X, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,6 +28,10 @@ const clientFormSchema = z.object({
   priority: z.enum(["low", "medium", "high", "critical", "vip"]),
   interests: z.string().optional(),
   notes: z.string().optional(),
+  budget: z.number().optional(),
+  timeframe: z.enum(["immediate", "short_term", "medium_term", "long_term"]).optional(),
+  location: z.string().optional(),
+  decisionMaker: z.boolean().default(false),
 });
 
 type ClientFormData = z.infer<typeof clientFormSchema>;
@@ -36,7 +40,9 @@ export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [leadScoreFilter, setLeadScoreFilter] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isUpdatingAllScores, setIsUpdatingAllScores] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch clients
@@ -53,6 +59,20 @@ export default function Clients() {
       queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       setIsCreateDialogOpen(false);
       form.reset();
+    },
+  });
+
+  // Update all lead scores mutation
+  const updateAllScoresMutation = useMutation({
+    mutationFn: async () => {
+      const promises = clients.map(client => 
+        apiRequest('POST', `/api/clients/${client.id}/update-lead-score`)
+      );
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      setIsUpdatingAllScores(false);
     },
   });
 
@@ -82,7 +102,23 @@ export default function Clients() {
     const matchesStatus = statusFilter === "all" || client.status === statusFilter;
     const matchesPriority = priorityFilter === "all" || client.priority === priorityFilter;
     
-    return matchesSearch && matchesStatus && matchesPriority;
+    let matchesLeadScore = true;
+    if (leadScoreFilter !== "all") {
+      const score = client.leadScore || 0;
+      switch (leadScoreFilter) {
+        case 'high':
+          matchesLeadScore = score >= 70;
+          break;
+        case 'medium':
+          matchesLeadScore = score >= 40 && score < 70;
+          break;
+        case 'low':
+          matchesLeadScore = score < 40;
+          break;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesPriority && matchesLeadScore;
   });
 
   // Group clients by status
@@ -91,6 +127,21 @@ export default function Clients() {
     active: filteredClients.filter(c => c.status === "active"),
     inactive: filteredClients.filter(c => c.status === "inactive"),
     vip: filteredClients.filter(c => c.status === "vip"),
+  };
+
+  // Analytics data
+  const totalClients = clients.length;
+  const avgLeadScore = clients.length > 0 
+    ? clients.reduce((sum, client) => sum + (client.leadScore || 0), 0) / clients.length 
+    : 0;
+  const highScoreClients = clients.filter(c => (c.leadScore || 0) >= 70).length;
+  const avgConversionProb = clients.length > 0
+    ? clients.reduce((sum, client) => sum + ((client.conversionProbability || 0) * 100), 0) / clients.length
+    : 0;
+
+  const handleUpdateAllScores = () => {
+    setIsUpdatingAllScores(true);
+    updateAllScoresMutation.mutate();
   };
 
   const getStatusIcon = (status: string) => {
@@ -153,16 +204,39 @@ export default function Clients() {
                   <SelectItem value="vip">VIP</SelectItem>
                 </SelectContent>
               </Select>
+              
+              <Select value={leadScoreFilter} onValueChange={setLeadScoreFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Lead score" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Scores</SelectItem>
+                  <SelectItem value="high">High (70+)</SelectItem>
+                  <SelectItem value="medium">Medium (40-69)</SelectItem>
+                  <SelectItem value="low">Low (&lt;40)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="add-client-btn">
-                  <Plus size={16} className="mr-2" />
-                  Add Client
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                onClick={handleUpdateAllScores}
+                disabled={isUpdatingAllScores || updateAllScoresMutation.isPending}
+                data-testid="update-all-scores-button"
+              >
+                <RefreshCw className={`mr-2 ${isUpdatingAllScores ? 'animate-spin' : ''}`} size={16} />
+                Update All Scores
+              </Button>
+              
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button data-testid="add-client-btn">
+                    <Plus size={16} className="mr-2" />
+                    Add Client
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Add New Client</DialogTitle>
                 </DialogHeader>
