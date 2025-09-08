@@ -64,33 +64,33 @@ export function Sidebar({
           const Icon = item.icon;
           
           return (
-            <Link key={item.name} href={item.href}>
-              <a
-                className={cn(
-                  "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition-all duration-300 font-medium",
-                  isActive 
-                    ? "luxury-button text-primary-foreground shadow-lg" 
-                    : item.status === "restricted"
-                    ? "text-red-400 hover:text-red-300 hover:bg-red-950/20 restricted-element"
-                    : item.status === "live"
-                    ? "text-foreground hover:text-primary hover:bg-primary/10 luxury-card"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50 luxury-card"
-                )}
-                data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                <Icon size={18} />
-                <span className="premium-text">{item.name}</span>
-                {item.status === "live" && (
-                  <span className="ml-auto status-luxury-online text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                    LIVE
-                  </span>
-                )}
-                {item.status === "restricted" && (
-                  <span className="ml-auto status-luxury-restricted text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                    🔒
-                  </span>
-                )}
-              </a>
+            <Link 
+              key={item.name} 
+              href={item.href}
+              className={cn(
+                "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition-all duration-300 font-medium",
+                isActive 
+                  ? "luxury-button text-primary-foreground shadow-lg" 
+                  : item.status === "restricted"
+                  ? "text-red-400 hover:text-red-300 hover:bg-red-950/20 restricted-element"
+                  : item.status === "live"
+                  ? "text-foreground hover:text-primary hover:bg-primary/10 luxury-card"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50 luxury-card"
+              )}
+              data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <Icon size={18} />
+              <span className="premium-text">{item.name}</span>
+              {item.status === "live" && (
+                <span className="ml-auto status-luxury-online text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                  LIVE
+                </span>
+              )}
+              {item.status === "restricted" && (
+                <span className="ml-auto status-luxury-restricted text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                  🔒
+                </span>
+              )}
             </Link>
           );
         })}
