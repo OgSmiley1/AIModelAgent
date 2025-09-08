@@ -10,7 +10,8 @@ import {
   TrendingUp, 
   Settings,
   Circle,
-  Brain
+  Brain,
+  Shield
 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Sales Forecasting", href: "/forecasting", icon: Brain },
   { name: "AI Chat", href: "/ai-chat", icon: MessageSquare },
   { name: "AI Agent", href: "/ai-agent", icon: Brain },
+  { name: "Advanced AI", href: "/advanced-ai", icon: Shield, status: "restricted" },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Trip Planner", href: "/trip-planner", icon: Route },
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
