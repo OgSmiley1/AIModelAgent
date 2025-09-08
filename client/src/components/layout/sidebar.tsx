@@ -43,16 +43,16 @@ export function Sidebar({
   const [location] = useLocation();
 
   return (
-    <div className="w-64 bg-card border-r border-border flex-shrink-0 overflow-y-auto" data-testid="sidebar">
+    <div className="w-64 luxury-nav flex-shrink-0 overflow-y-auto" data-testid="sidebar">
       {/* Logo Section */}
-      <div className="p-4 border-b border-border">
+      <div className="p-6 border-b border-primary/20">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <Bot className="text-primary-foreground" size={20} data-testid="logo-icon" />
+          <div className="w-12 h-12 luxury-button rounded-xl flex items-center justify-center">
+            <Bot className="text-primary-foreground" size={24} data-testid="logo-icon" />
           </div>
           <div>
-            <h1 className="font-semibold text-lg" data-testid="app-title">CLOSERT AI</h1>
-            <p className="text-xs text-muted-foreground" data-testid="app-subtitle">Local Business Agent</p>
+            <h1 className="vacheron-title text-xl font-light" data-testid="app-title">CLOSERT AI</h1>
+            <p className="text-xs text-muted-foreground premium-text" data-testid="app-subtitle">Luxury Business Intelligence</p>
           </div>
         </div>
       </div>
@@ -67,18 +67,27 @@ export function Sidebar({
             <Link key={item.name} href={item.href}>
               <a
                 className={cn(
-                  "flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors",
+                  "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition-all duration-300 font-medium",
                   isActive 
-                    ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-accent hover:text-accent-foreground"
+                    ? "luxury-button text-primary-foreground shadow-lg" 
+                    : item.status === "restricted"
+                    ? "text-red-400 hover:text-red-300 hover:bg-red-950/20 restricted-element"
+                    : item.status === "live"
+                    ? "text-foreground hover:text-primary hover:bg-primary/10 luxury-card"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50 luxury-card"
                 )}
                 data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <Icon size={16} />
-                <span>{item.name}</span>
+                <Icon size={18} />
+                <span className="premium-text">{item.name}</span>
                 {item.status === "live" && (
-                  <span className="ml-auto bg-chart-1 text-white text-xs px-2 py-0.5 rounded-full">
-                    Live
+                  <span className="ml-auto status-luxury-online text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                    LIVE
+                  </span>
+                )}
+                {item.status === "restricted" && (
+                  <span className="ml-auto status-luxury-restricted text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                    🔒
                   </span>
                 )}
               </a>
@@ -88,35 +97,35 @@ export function Sidebar({
       </nav>
       
       {/* System Status */}
-      <div className="p-4 mt-auto border-t border-border" data-testid="system-status">
-        <div className="bg-muted rounded-lg p-3">
-          <div className="flex items-center space-x-2 mb-2">
+      <div className="p-6 mt-auto border-t border-primary/20" data-testid="system-status">
+        <div className="luxury-card rounded-xl p-4">
+          <div className="flex items-center space-x-2 mb-3">
             <Circle 
-              size={8} 
+              size={10} 
               className={cn(
-                "rounded-full animate-pulse-slow",
-                aiOnline ? "status-online" : "status-offline"
+                "rounded-full",
+                aiOnline ? "status-luxury-online" : "status-offline"
               )} 
             />
-            <span className="text-sm font-medium">System Status</span>
+            <span className="text-sm font-medium gold-accent">System Status</span>
           </div>
-          <div className="space-y-1 text-xs text-muted-foreground">
+          <div className="space-y-2 text-xs">
             <div className="flex justify-between">
-              <span>Local AI:</span>
-              <span className={cn(aiOnline ? "text-chart-1" : "text-muted-foreground")} data-testid="ai-status">
-                {aiOnline ? "Online" : "Offline"}
+              <span className="text-muted-foreground">Local AI:</span>
+              <span className={cn(aiOnline ? "text-chart-1 font-medium" : "text-muted-foreground")} data-testid="ai-status">
+                {aiOnline ? "● Online" : "○ Offline"}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>WhatsApp:</span>
-              <span className={cn(whatsappConnected ? "text-chart-1" : "text-chart-2")} data-testid="whatsapp-status">
-                {whatsappConnected ? "Connected" : "Disconnected"}
+              <span className="text-muted-foreground">WhatsApp:</span>
+              <span className={cn(whatsappConnected ? "text-chart-1 font-medium" : "text-chart-2 font-medium")} data-testid="whatsapp-status">
+                {whatsappConnected ? "● Connected" : "○ Disconnected"}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Database:</span>
-              <span className={cn(databaseActive ? "text-chart-1" : "text-muted-foreground")} data-testid="database-status">
-                {databaseActive ? "Active" : "Inactive"}
+              <span className="text-muted-foreground">Database:</span>
+              <span className={cn(databaseActive ? "text-chart-1 font-medium" : "text-muted-foreground")} data-testid="database-status">
+                {databaseActive ? "● Active" : "○ Inactive"}
               </span>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { X, RefreshCw, Smartphone, QrCode, CheckCircle, Clock } from "lucide-react";
+import { X, RefreshCw, Smartphone, QrCode, CheckCircle, Clock, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ConnectionModalProps {
@@ -14,6 +14,20 @@ interface ConnectionModalProps {
 export function ConnectionModal({ open, onOpenChange }: ConnectionModalProps) {
   const [connectionStatus, setConnectionStatus] = useState<"waiting" | "connecting" | "connected" | "error">("waiting");
   const [qrCodeRefreshKey, setQrCodeRefreshKey] = useState(0);
+
+  // Handle escape key and provide better UX
+  useEffect(() => {
+    if (!open) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open, onOpenChange]);
 
   // Simulate QR code refresh every 30 seconds
   useEffect(() => {
@@ -82,25 +96,42 @@ export function ConnectionModal({ open, onOpenChange }: ConnectionModalProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-4" data-testid="whatsapp-connection-modal">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center space-x-2">
-              <Smartphone className="text-primary" size={20} />
-              <span>Connect WhatsApp</span>
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="text-muted-foreground hover:text-foreground"
-              data-testid="close-modal-btn"
-            >
-              <X size={16} />
-            </Button>
-          </div>
-        </DialogHeader>
+    <>
+      {open && (
+        <div className="escape-hint">
+          Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">ESC</kbd> to close
+        </div>
+      )}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md mx-4 luxury-modal border-0" data-testid="whatsapp-connection-modal">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center space-x-3 vacheron-title text-lg">
+                <Smartphone className="text-primary" size={20} />
+                <span>Connect WhatsApp Business</span>
+              </DialogTitle>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  data-testid="close-modal-btn"
+                >
+                  <ArrowLeft size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  data-testid="close-modal-x-btn"
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
 
         <div className="space-y-6">
           {/* QR Code Section */}
@@ -201,7 +232,7 @@ export function ConnectionModal({ open, onOpenChange }: ConnectionModalProps) {
           <div className="flex space-x-3">
             <Button 
               variant="outline" 
-              className="flex-1"
+              className="flex-1 border-primary/30 hover:bg-primary/10"
               onClick={handleRefreshQR}
               disabled={connectionStatus === "connecting"}
               data-testid="refresh-qr-btn"
@@ -210,9 +241,19 @@ export function ConnectionModal({ open, onOpenChange }: ConnectionModalProps) {
               Refresh QR Code
             </Button>
             
+            <Button 
+              variant="outline"
+              className="border-muted-foreground/30 hover:bg-muted/20"
+              onClick={() => onOpenChange(false)}
+              data-testid="back-btn"
+            >
+              <ArrowLeft size={16} className="mr-2" />
+              Back
+            </Button>
+            
             {connectionStatus === "connected" && (
               <Button 
-                className="flex-1"
+                className="flex-1 luxury-button"
                 onClick={() => onOpenChange(false)}
                 data-testid="done-btn"
               >
@@ -239,5 +280,6 @@ export function ConnectionModal({ open, onOpenChange }: ConnectionModalProps) {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
