@@ -16,9 +16,6 @@ interface MaazClient {
   budget?: number;
   location?: string;
   tags?: string[];
-  followUpRequired?: boolean;
-  followUpDate?: string;
-  lastInteraction?: string;
 }
 
 const API_BASE = 'http://localhost:5000/api';
@@ -36,10 +33,7 @@ const maazClients: MaazClient[] = [
     notes: 'Promised to check availability of Overseas Chronograph 5500V/110A-B148 blue dial. Action required: Follow up on watch availability and schedule viewing appointment. Urgency Score: 9/10. Deal Value: 140,000 AED. Last interaction: WhatsApp inquiry.',
     budget: 140000,
     location: 'Dubai, UAE',
-    tags: ['vacheron_constantin', 'overseas_collection', 'high_urgency', 'whatsapp_lead'],
-    followUpRequired: true,
-    followUpDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday (overdue)
-    lastInteraction: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+    tags: ['vacheron_constantin', 'overseas_collection', 'high_urgency', 'whatsapp_lead']
   },
   {
     name: 'Fatima Al Zahra',
@@ -52,10 +46,7 @@ const maazClients: MaazClient[] = [
     notes: 'Client interested in Patrimony collection, budget 200k AED. Action required: Send catalog and arrange boutique visit. Urgency Score: 8/10. Deal Value: 200,000 AED. Last interaction: Phone call.',
     budget: 200000,
     location: 'Abu Dhabi, UAE',
-    tags: ['vacheron_constantin', 'patrimony_collection', 'high_budget', 'phone_lead'],
-    followUpRequired: true,
-    followUpDate: new Date().toISOString(), // Today
-    lastInteraction: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    tags: ['vacheron_constantin', 'patrimony_collection', 'high_budget', 'phone_lead']
   },
   {
     name: 'Omar Hassan',
@@ -68,10 +59,7 @@ const maazClients: MaazClient[] = [
     notes: 'Considering Traditionnelle Perpetual Calendar, needs finance options. Action required: Prepare financing proposal and schedule presentation. Urgency Score: 7/10. Deal Value: 472,000 AED. Last interaction: Email exchange.',
     budget: 472000,
     location: 'Sharjah, UAE',
-    tags: ['vacheron_constantin', 'traditionnelle_collection', 'grand_complications', 'high_value', 'financing_needed'],
-    followUpRequired: true,
-    followUpDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
-    lastInteraction: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    tags: ['vacheron_constantin', 'traditionnelle_collection', 'grand_complications', 'high_value', 'financing_needed']
   },
   {
     name: 'Khalid Al Maktoum',
@@ -84,10 +72,7 @@ const maazClients: MaazClient[] = [
     notes: 'VIP prospect interested in exclusive Les Cabinotiers pieces. Collector of unique timepieces. Requires private appointment. Deal Value: 1,500,000+ AED.',
     budget: 1500000,
     location: 'Dubai, UAE',
-    tags: ['vacheron_constantin', 'les_cabinotiers', 'vip_client', 'collector', 'exclusive'],
-    followUpRequired: true,
-    followUpDate: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 3 days
-    lastInteraction: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
+    tags: ['vacheron_constantin', 'les_cabinotiers', 'vip_client', 'collector', 'exclusive']
   },
   {
     name: 'Laila Bin Rashid',
@@ -100,10 +85,7 @@ const maazClients: MaazClient[] = [
     notes: 'Interested in Ladies Overseas collection with diamond setting. Looking for anniversary gift. Budget flexible up to 300k AED. Prefers mother-of-pearl dials.',
     budget: 300000,
     location: 'Dubai, UAE',
-    tags: ['vacheron_constantin', 'ladies_watches', 'overseas_collection', 'anniversary_gift'],
-    followUpRequired: true,
-    followUpDate: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 2 days
-    lastInteraction: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+    tags: ['vacheron_constantin', 'ladies_watches', 'overseas_collection', 'anniversary_gift']
   },
   {
     name: 'Mohammed Al Sharif',
@@ -116,10 +98,7 @@ const maazClients: MaazClient[] = [
     notes: 'First-time luxury watch buyer. Interested in FiftySix collection as entry point. Budget conscious but appreciates craftsmanship. Deal Value: 85,000 AED.',
     budget: 85000,
     location: 'Ajman, UAE',
-    tags: ['vacheron_constantin', 'fiftysix_collection', 'first_time_buyer', 'budget_conscious'],
-    followUpRequired: true,
-    followUpDate: new Date(Date.now() + 96 * 60 * 60 * 1000).toISOString(), // 4 days
-    lastInteraction: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    tags: ['vacheron_constantin', 'fiftysix_collection', 'first_time_buyer', 'budget_conscious']
   }
 ];
 
