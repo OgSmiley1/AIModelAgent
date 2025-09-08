@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { ClientProfileData } from "@/types";
+import { FollowUpsSection } from "./follow-ups-section";
 
 interface EnhancedProfileCardProps {
   client: ClientProfileData;
