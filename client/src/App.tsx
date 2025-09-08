@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import WhatsApp from "@/pages/whatsapp";
-import Clients from "@/pages/clients";
+import Clients from "@/pages/clients-working";
 import Forecasting from "@/pages/forecasting";
 import AIChat from "@/pages/ai-chat";
 import Documents from "@/pages/documents";

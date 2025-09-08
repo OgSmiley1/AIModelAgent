@@ -286,7 +286,14 @@ export class FollowUpAutomationService {
 
     // Adjust based on client's best time to contact
     const bestTime = engagementMetrics.bestTimeToContact;
-    optimalDate.setDay(bestTime.dayOfWeek);
+    
+    // Calculate the next occurrence of the best day of week
+    const today = new Date();
+    const daysUntilBestDay = (bestTime.dayOfWeek - today.getDay() + 7) % 7;
+    if (daysUntilBestDay > 0) {
+      optimalDate.setDate(today.getDate() + daysUntilBestDay);
+    }
+    
     optimalDate.setHours(bestTime.hour, 0, 0, 0);
 
     // Ensure it's not in the past

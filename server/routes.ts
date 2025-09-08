@@ -295,6 +295,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Automated follow-up routes
+  app.post("/api/followups/generate-recommendations", async (req, res) => {
+    try {
+      const { clientId } = req.body;
+      const client = await storage.getClient(clientId);
+      const interactions = await storage.getInteractionsByClient(clientId);
+      const deals = await storage.getDealsByClient(clientId);
+      
+      const recommendations = FollowUpAutomationService.generateFollowUpRecommendations(
+        client, 
+        interactions, 
+        deals
+      );
+      
+      res.json(recommendations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate follow-up recommendations" });
+    }
+  });
+
+  app.post("/api/followups/bulk-generate", async (req, res) => {
+    try {
+      const clients = await storage.getClients();
+      const interactions = await storage.getInteractions();
+      const messages = await storage.getMessages();
+      const deals = await storage.getDeals();
+      
+      const followUps = FollowUpAutomationService.createBulkFollowUps(
+        clients,
+        interactions,
+        messages,
+        deals
+      );
+      
+      // Create the follow-ups in storage
+      const createdFollowUps = [];
+      for (const followUp of followUps) {
+        const created = await storage.createFollowUp(followUp);
+        createdFollowUps.push(created);
+      }
+      
+      res.json({
+        message: `Generated ${createdFollowUps.length} automated follow-ups`,
+        followUps: createdFollowUps
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate bulk follow-ups" });
+    }
+  });
+
   // Interaction routes
   app.get("/api/interactions", async (req, res) => {
     try {
