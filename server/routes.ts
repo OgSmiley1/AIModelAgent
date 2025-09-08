@@ -9,6 +9,8 @@ import { AIAgentService } from "./services/ai-agent";
 import { AdvancedAI } from "./services/advanced-ai";
 import { authenticateAdvancedAI, requireAdvancedAuth, AuthenticatedRequest } from "./middleware/auth";
 import { initializeWebSocket } from "./services/websocket";
+import { initializeGitHubService, getGitHubService } from "./services/github-service";
+import { selfEditingService } from "./services/self-editing-service";
 import { 
   insertClientSchema, 
   insertMessageSchema, 
@@ -20,7 +22,11 @@ import {
   insertSystemSettingSchema,
   insertDealSchema,
   insertSalesForecastSchema,
-  insertLeadScoringHistorySchema
+  insertLeadScoringHistorySchema,
+  insertGithubRepositorySchema,
+  insertSelfEditingHistorySchema,
+  insertAiLearningDocumentSchema,
+  insertCodeAnalysisReportSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -961,6 +967,249 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Internet search error:', error);
       res.status(500).json({ error: "Search failed" });
+    }
+  });
+
+  // GitHub Integration Routes
+  
+  // Initialize GitHub repository
+  app.post("/api/github/initialize", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { token, owner, repo } = req.body;
+      
+      if (!token || !owner || !repo) {
+        return res.status(400).json({ error: "Token, owner, and repo are required" });
+      }
+
+      const githubService = initializeGitHubService(token, owner, repo);
+      const repository = await githubService.initializeRepository();
+      
+      res.json({
+        success: true,
+        repository,
+        message: "GitHub repository initialized successfully"
+      });
+    } catch (error) {
+      console.error('GitHub initialization error:', error);
+      res.status(500).json({ error: "Failed to initialize GitHub repository" });
+    }
+  });
+
+  // Get repository information
+  app.get("/api/github/repository", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const githubService = getGitHubService();
+      const repoInfo = await githubService.getRepositoryInfo();
+      const analysis = await githubService.analyzeRepository();
+      
+      res.json({
+        repository: repoInfo,
+        analysis,
+        lastAnalyzed: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Repository info error:', error);
+      res.status(500).json({ error: "Failed to get repository information" });
+    }
+  });
+
+  // Analyze codebase for issues
+  app.post("/api/github/analyze", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { repositoryId } = req.body;
+      
+      const analysis = await selfEditingService.analyzeCodebase(repositoryId);
+      
+      res.json({
+        analysis,
+        timestamp: new Date().toISOString(),
+        repositoryId
+      });
+    } catch (error) {
+      console.error('Codebase analysis error:', error);
+      res.status(500).json({ error: "Codebase analysis failed" });
+    }
+  });
+
+  // Generate automated fix plan
+  app.post("/api/github/generate-fix", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { repositoryId, analysisResult, triggerEvent = 'manual_request' } = req.body;
+      
+      if (!repositoryId || !analysisResult) {
+        return res.status(400).json({ error: "Repository ID and analysis result are required" });
+      }
+
+      const editPlan = await selfEditingService.generateAutomatedFix(
+        repositoryId,
+        analysisResult,
+        triggerEvent
+      );
+      
+      res.json({
+        editPlan,
+        generated: new Date().toISOString(),
+        repositoryId
+      });
+    } catch (error) {
+      console.error('Fix generation error:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Fix generation failed" });
+    }
+  });
+
+  // Apply automated fixes
+  app.post("/api/github/apply-fix", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { repositoryId, editPlan, triggerEvent = 'manual_application' } = req.body;
+      
+      if (!repositoryId || !editPlan) {
+        return res.status(400).json({ error: "Repository ID and edit plan are required" });
+      }
+
+      const editHistory = await selfEditingService.applySelfEdit(
+        repositoryId,
+        editPlan,
+        triggerEvent
+      );
+      
+      res.json({
+        success: true,
+        editHistory,
+        applied: new Date().toISOString(),
+        repositoryId
+      });
+    } catch (error) {
+      console.error('Fix application error:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Fix application failed" });
+    }
+  });
+
+  // Monitor system for issues
+  app.get("/api/github/monitor", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const monitoring = await selfEditingService.monitorForIssues();
+      
+      res.json({
+        monitoring,
+        timestamp: new Date().toISOString(),
+        systemStatus: "monitoring_active"
+      });
+    } catch (error) {
+      console.error('System monitoring error:', error);
+      res.status(500).json({ error: "System monitoring failed" });
+    }
+  });
+
+  // Get self-editing history
+  app.get("/api/github/history/:repositoryId?", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { repositoryId } = req.params;
+      
+      let history;
+      if (repositoryId) {
+        history = await storage.getSelfEditingHistory(repositoryId);
+      } else {
+        history = await storage.getAllSelfEditingHistory();
+      }
+      
+      res.json({
+        history,
+        count: history.length,
+        repositoryId: repositoryId || "all"
+      });
+    } catch (error) {
+      console.error('History retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve history" });
+    }
+  });
+
+  // Upload and process AI learning documents
+  app.post("/api/ai-learning/upload", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const validatedData = insertAiLearningDocumentSchema.parse(req.body);
+      
+      const document = await storage.createAiLearningDocument(validatedData);
+      
+      // TODO: Process document for AI learning (extract content, create embeddings, etc.)
+      
+      res.json({
+        success: true,
+        document,
+        message: "Document uploaded and queued for processing"
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid document data", details: error.errors });
+      }
+      console.error('Document upload error:', error);
+      res.status(500).json({ error: "Document upload failed" });
+    }
+  });
+
+  // Get AI learning documents
+  app.get("/api/ai-learning/documents", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { category } = req.query;
+      
+      let documents;
+      if (category && typeof category === 'string') {
+        documents = await storage.getAiLearningDocumentsByCategory(category);
+      } else {
+        documents = await storage.getAllAiLearningDocuments();
+      }
+      
+      res.json({
+        documents,
+        count: documents.length,
+        category: category || "all"
+      });
+    } catch (error) {
+      console.error('Documents retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve documents" });
+    }
+  });
+
+  // Get code analysis reports
+  app.get("/api/github/analysis-reports/:repositoryId?", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { repositoryId } = req.params;
+      
+      let reports;
+      if (repositoryId) {
+        reports = await storage.getCodeAnalysisReportsByRepository(repositoryId);
+      } else {
+        // Get all repositories and their reports
+        const repositories = await storage.getAllGithubRepositories();
+        reports = [];
+        for (const repo of repositories) {
+          const repoReports = await storage.getCodeAnalysisReportsByRepository(repo.id);
+          reports.push(...repoReports);
+        }
+      }
+      
+      res.json({
+        reports,
+        count: reports.length,
+        repositoryId: repositoryId || "all"
+      });
+    } catch (error) {
+      console.error('Analysis reports retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve analysis reports" });
+    }
+  });
+
+  // Get all GitHub repositories
+  app.get("/api/github/repositories", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const repositories = await storage.getAllGithubRepositories();
+      
+      res.json({
+        repositories,
+        count: repositories.length
+      });
+    } catch (error) {
+      console.error('Repositories retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve repositories" });
     }
   });
 

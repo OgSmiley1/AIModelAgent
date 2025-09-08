@@ -11,7 +11,11 @@ import {
   type SystemSetting, type InsertSystemSetting,
   type Deal, type InsertDeal,
   type SalesForecast, type InsertSalesForecast,
-  type LeadScoringHistory, type InsertLeadScoringHistory
+  type LeadScoringHistory, type InsertLeadScoringHistory,
+  type GithubRepository, type InsertGithubRepository,
+  type SelfEditingHistory, type InsertSelfEditingHistory,
+  type AiLearningDocument, type InsertAiLearningDocument,
+  type CodeAnalysisReport, type InsertCodeAnalysisReport
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -100,6 +104,33 @@ export interface IStorage {
   getLeadScoringHistory(clientId: string): Promise<LeadScoringHistory[]>;
   createLeadScoringEntry(entry: InsertLeadScoringHistory): Promise<LeadScoringHistory>;
   updateClientLeadScore(clientId: string, score: number, factors: any, confidence: number): Promise<Client>;
+
+  // GitHub repository operations
+  getGithubRepository(id: string): Promise<GithubRepository | undefined>;
+  getAllGithubRepositories(): Promise<GithubRepository[]>;
+  createGithubRepository(repository: InsertGithubRepository): Promise<GithubRepository>;
+  updateGithubRepository(id: string, updates: Partial<GithubRepository>): Promise<GithubRepository>;
+  deleteGithubRepository(id: string): Promise<boolean>;
+
+  // Self-editing history operations
+  getSelfEditingHistory(repositoryId: string): Promise<SelfEditingHistory[]>;
+  getSelfEditingEntry(id: string): Promise<SelfEditingHistory | undefined>;
+  getAllSelfEditingHistory(): Promise<SelfEditingHistory[]>;
+  createSelfEditingEntry(entry: InsertSelfEditingHistory): Promise<SelfEditingHistory>;
+  updateSelfEditingEntry(id: string, updates: Partial<SelfEditingHistory>): Promise<SelfEditingHistory>;
+
+  // AI learning document operations
+  getAiLearningDocument(id: string): Promise<AiLearningDocument | undefined>;
+  getAllAiLearningDocuments(): Promise<AiLearningDocument[]>;
+  getAiLearningDocumentsByCategory(category: string): Promise<AiLearningDocument[]>;
+  createAiLearningDocument(document: InsertAiLearningDocument): Promise<AiLearningDocument>;
+  updateAiLearningDocument(id: string, updates: Partial<AiLearningDocument>): Promise<AiLearningDocument>;
+  deleteAiLearningDocument(id: string): Promise<boolean>;
+
+  // Code analysis report operations
+  getCodeAnalysisReport(id: string): Promise<CodeAnalysisReport | undefined>;
+  getCodeAnalysisReportsByRepository(repositoryId: string): Promise<CodeAnalysisReport[]>;
+  createCodeAnalysisReport(report: InsertCodeAnalysisReport): Promise<CodeAnalysisReport>;
 }
 
 export class MemStorage implements IStorage {
@@ -116,6 +147,10 @@ export class MemStorage implements IStorage {
   private deals: Map<string, Deal> = new Map();
   private salesForecasts: Map<string, SalesForecast> = new Map();
   private leadScoringHistory: Map<string, LeadScoringHistory> = new Map();
+  private githubRepositories: Map<string, GithubRepository> = new Map();
+  private selfEditingHistory: Map<string, SelfEditingHistory> = new Map();
+  private aiLearningDocuments: Map<string, AiLearningDocument> = new Map();
+  private codeAnalysisReports: Map<string, CodeAnalysisReport> = new Map();
 
   constructor() {
     // Initialize with some default system settings
@@ -731,6 +766,183 @@ export class MemStorage implements IStorage {
     });
 
     return updatedClient;
+  }
+
+  // GitHub repository operations
+  async getGithubRepository(id: string): Promise<GithubRepository | undefined> {
+    return this.githubRepositories.get(id);
+  }
+
+  async getAllGithubRepositories(): Promise<GithubRepository[]> {
+    return Array.from(this.githubRepositories.values());
+  }
+
+  async createGithubRepository(repository: InsertGithubRepository): Promise<GithubRepository> {
+    const newRepository: GithubRepository = {
+      id: randomUUID(),
+      ...repository,
+      isActive: repository.isActive ?? true,
+      defaultBranch: repository.defaultBranch || "main",
+      accessToken: repository.accessToken || null,
+      webhookSecret: repository.webhookSecret || null,
+      lastSync: repository.lastSync || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.githubRepositories.set(newRepository.id, newRepository);
+    return newRepository;
+  }
+
+  async updateGithubRepository(id: string, updates: Partial<GithubRepository>): Promise<GithubRepository> {
+    const repository = this.githubRepositories.get(id);
+    if (!repository) {
+      throw new Error("GitHub repository not found");
+    }
+
+    const updatedRepository = {
+      ...repository,
+      ...updates,
+      updatedAt: new Date()
+    };
+
+    this.githubRepositories.set(id, updatedRepository);
+    return updatedRepository;
+  }
+
+  async deleteGithubRepository(id: string): Promise<boolean> {
+    return this.githubRepositories.delete(id);
+  }
+
+  // Self-editing history operations
+  async getSelfEditingHistory(repositoryId: string): Promise<SelfEditingHistory[]> {
+    return Array.from(this.selfEditingHistory.values())
+      .filter(entry => entry.repositoryId === repositoryId);
+  }
+
+  async getSelfEditingEntry(id: string): Promise<SelfEditingHistory | undefined> {
+    return this.selfEditingHistory.get(id);
+  }
+
+  async getAllSelfEditingHistory(): Promise<SelfEditingHistory[]> {
+    return Array.from(this.selfEditingHistory.values());
+  }
+
+  async createSelfEditingEntry(entry: InsertSelfEditingHistory): Promise<SelfEditingHistory> {
+    const newEntry: SelfEditingHistory = {
+      id: randomUUID(),
+      ...entry,
+      repositoryId: entry.repositoryId || null,
+      commitHash: entry.commitHash || null,
+      branchName: entry.branchName || "main",
+      filesModified: entry.filesModified || [],
+      changesDetails: entry.changesDetails || null,
+      triggerEvent: entry.triggerEvent || null,
+      aiAnalysis: entry.aiAnalysis || null,
+      status: entry.status || "pending",
+      riskLevel: entry.riskLevel || "low",
+      testsPassed: entry.testsPassed ?? false,
+      reviewRequired: entry.reviewRequired ?? true,
+      autoApproved: entry.autoApproved ?? false,
+      rollbackPlan: entry.rollbackPlan || null,
+      createdAt: new Date(),
+      appliedAt: null
+    };
+    this.selfEditingHistory.set(newEntry.id, newEntry);
+    return newEntry;
+  }
+
+  async updateSelfEditingEntry(id: string, updates: Partial<SelfEditingHistory>): Promise<SelfEditingHistory> {
+    const entry = this.selfEditingHistory.get(id);
+    if (!entry) {
+      throw new Error("Self-editing history entry not found");
+    }
+
+    const updatedEntry = {
+      ...entry,
+      ...updates
+    };
+
+    this.selfEditingHistory.set(id, updatedEntry);
+    return updatedEntry;
+  }
+
+  // AI learning document operations
+  async getAiLearningDocument(id: string): Promise<AiLearningDocument | undefined> {
+    return this.aiLearningDocuments.get(id);
+  }
+
+  async getAllAiLearningDocuments(): Promise<AiLearningDocument[]> {
+    return Array.from(this.aiLearningDocuments.values());
+  }
+
+  async getAiLearningDocumentsByCategory(category: string): Promise<AiLearningDocument[]> {
+    return Array.from(this.aiLearningDocuments.values())
+      .filter(doc => doc.category === category);
+  }
+
+  async createAiLearningDocument(document: InsertAiLearningDocument): Promise<AiLearningDocument> {
+    const newDocument: AiLearningDocument = {
+      id: randomUUID(),
+      ...document,
+      fileSize: document.fileSize || null,
+      content: document.content || null,
+      vectorEmbedding: document.vectorEmbedding || null,
+      category: document.category || "general",
+      topics: document.topics || [],
+      processed: document.processed ?? false,
+      processedAt: null,
+      learningContext: document.learningContext || null,
+      priority: document.priority || "medium",
+      metadata: document.metadata || null,
+      createdAt: new Date()
+    };
+    this.aiLearningDocuments.set(newDocument.id, newDocument);
+    return newDocument;
+  }
+
+  async updateAiLearningDocument(id: string, updates: Partial<AiLearningDocument>): Promise<AiLearningDocument> {
+    const document = this.aiLearningDocuments.get(id);
+    if (!document) {
+      throw new Error("AI learning document not found");
+    }
+
+    const updatedDocument = {
+      ...document,
+      ...updates
+    };
+
+    this.aiLearningDocuments.set(id, updatedDocument);
+    return updatedDocument;
+  }
+
+  async deleteAiLearningDocument(id: string): Promise<boolean> {
+    return this.aiLearningDocuments.delete(id);
+  }
+
+  // Code analysis report operations
+  async getCodeAnalysisReport(id: string): Promise<CodeAnalysisReport | undefined> {
+    return this.codeAnalysisReports.get(id);
+  }
+
+  async getCodeAnalysisReportsByRepository(repositoryId: string): Promise<CodeAnalysisReport[]> {
+    return Array.from(this.codeAnalysisReports.values())
+      .filter(report => report.repositoryId === repositoryId);
+  }
+
+  async createCodeAnalysisReport(report: InsertCodeAnalysisReport): Promise<CodeAnalysisReport> {
+    const newReport: CodeAnalysisReport = {
+      id: randomUUID(),
+      ...report,
+      repositoryId: report.repositoryId || null,
+      issues: report.issues || [],
+      recommendations: report.recommendations || [],
+      severity: report.severity || "info",
+      autoFixable: report.autoFixable ?? false,
+      fixSuggestions: report.fixSuggestions || null,
+      createdAt: new Date()
+    };
+    this.codeAnalysisReports.set(newReport.id, newReport);
+    return newReport;
   }
 }
 

@@ -291,6 +291,102 @@ export const insertDealSchema = createInsertSchema(deals).omit({
   updatedAt: true,
 });
 
+// GitHub repository management table
+export const githubRepositories = pgTable("github_repositories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  fullName: text("full_name").notNull(), // owner/repo
+  url: text("url").notNull(),
+  description: text("description"),
+  defaultBranch: text("default_branch").default("main"),
+  isActive: boolean("is_active").default(true),
+  accessToken: text("access_token"), // Encrypted GitHub access token
+  webhookSecret: text("webhook_secret"),
+  lastSync: timestamp("last_sync"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Self-editing history table for tracking autonomous code changes
+export const selfEditingHistory = pgTable("self_editing_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  repositoryId: varchar("repository_id").references(() => githubRepositories.id),
+  commitHash: text("commit_hash"),
+  branchName: text("branch_name").default("main"),
+  editType: text("edit_type").notNull(), // bug_fix, feature_addition, optimization, refactor, security_patch
+  description: text("description").notNull(),
+  filesModified: text("files_modified").array(),
+  changesDetails: jsonb("changes_details"), // Detailed breakdown of changes
+  triggerEvent: text("trigger_event"), // error_detected, performance_issue, security_alert, scheduled_maintenance
+  aiAnalysis: jsonb("ai_analysis"), // AI reasoning for the changes
+  status: text("status").default("pending"), // pending, applied, failed, reverted
+  riskLevel: text("risk_level").default("low"), // low, medium, high, critical
+  testsPassed: boolean("tests_passed").default(false),
+  reviewRequired: boolean("review_required").default(true),
+  autoApproved: boolean("auto_approved").default(false),
+  rollbackPlan: jsonb("rollback_plan"),
+  createdAt: timestamp("created_at").defaultNow(),
+  appliedAt: timestamp("applied_at"),
+});
+
+// AI learning documents table for knowledge base
+export const aiLearningDocuments = pgTable("ai_learning_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  fileType: text("file_type").notNull(), // pdf, txt, md, docx, json
+  fileSize: integer("file_size"),
+  filePath: text("file_path").notNull(),
+  content: text("content"), // Extracted text content
+  vectorEmbedding: text("vector_embedding"), // For semantic search
+  category: text("category").default("general"), // technical, business, procedures, policies
+  topics: text("topics").array(), // Extracted topics/keywords
+  processed: boolean("processed").default(false),
+  processedAt: timestamp("processed_at"),
+  learningContext: text("learning_context"), // How this document should be used for AI learning
+  priority: text("priority").default("medium"), // low, medium, high, critical
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Code analysis reports table
+export const codeAnalysisReports = pgTable("code_analysis_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  repositoryId: varchar("repository_id").references(() => githubRepositories.id),
+  analysisType: text("analysis_type").notNull(), // security, performance, code_quality, dependencies
+  results: jsonb("results").notNull(),
+  issues: jsonb("issues").array(), // Array of identified issues
+  recommendations: jsonb("recommendations").array(), // AI-generated recommendations
+  severity: text("severity").default("info"), // info, warning, error, critical
+  autoFixable: boolean("auto_fixable").default(false),
+  fixSuggestions: jsonb("fix_suggestions"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas for new tables
+export const insertGithubRepositorySchema = createInsertSchema(githubRepositories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSelfEditingHistorySchema = createInsertSchema(selfEditingHistory).omit({
+  id: true,
+  createdAt: true,
+  appliedAt: true,
+});
+
+export const insertAiLearningDocumentSchema = createInsertSchema(aiLearningDocuments).omit({
+  id: true,
+  createdAt: true,
+  processedAt: true,
+});
+
+export const insertCodeAnalysisReportSchema = createInsertSchema(codeAnalysisReports).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -330,3 +426,15 @@ export type LeadScoringHistory = typeof leadScoringHistory.$inferSelect;
 
 export type InsertDeal = z.infer<typeof insertDealSchema>;
 export type Deal = typeof deals.$inferSelect;
+
+export type InsertGithubRepository = z.infer<typeof insertGithubRepositorySchema>;
+export type GithubRepository = typeof githubRepositories.$inferSelect;
+
+export type InsertSelfEditingHistory = z.infer<typeof insertSelfEditingHistorySchema>;
+export type SelfEditingHistory = typeof selfEditingHistory.$inferSelect;
+
+export type InsertAiLearningDocument = z.infer<typeof insertAiLearningDocumentSchema>;
+export type AiLearningDocument = typeof aiLearningDocuments.$inferSelect;
+
+export type InsertCodeAnalysisReport = z.infer<typeof insertCodeAnalysisReportSchema>;
+export type CodeAnalysisReport = typeof codeAnalysisReports.$inferSelect;
