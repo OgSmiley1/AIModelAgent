@@ -96,7 +96,7 @@ export default function Dashboard() {
   } : undefined;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar 
         whatsappConnected={whatsappStatus?.connected || false}
         aiOnline={connected}
@@ -109,15 +109,47 @@ export default function Dashboard() {
         <div className="flex-1 overflow-hidden">
           <div className="h-full flex">
             {/* Main Dashboard Area */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Stats Cards */}
               {stats && <StatsCards stats={stats} />}
               
+              {/* Advanced AI Quick Access */}
+              <Card className="luxury-card border-red-500/30 bg-gradient-to-r from-red-950/20 to-black/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-3 text-red-400">
+                    <Bot className="h-6 w-6" />
+                    <span className="vacheron-title">Advanced AI System</span>
+                    <span className="status-luxury-restricted text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                      🔒 RESTRICTED ACCESS
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Access the unrestricted AI intelligence system with advanced psychological analysis capabilities.
+                    </p>
+                    <div className="flex space-x-3">
+                      <Button 
+                        onClick={() => window.location.href = '/advanced-ai'}
+                        className="luxury-button"
+                        data-testid="access-advanced-ai"
+                      >
+                        Access Advanced AI
+                      </Button>
+                      <div className="text-xs text-red-400 flex items-center">
+                        <span>Credentials: Smiley / Smiley@123jz</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Main Content Tabs */}
-              <Card>
+              <Card className="luxury-card">
                 <CardHeader>
                   <div className="flex space-x-6">
-                    <Button variant="ghost" className="text-primary border-b-2 border-primary pb-2" data-testid="whatsapp-monitor-tab">
+                    <Button variant="ghost" className="text-primary border-b-2 border-primary pb-2 luxury-button" data-testid="whatsapp-monitor-tab">
                       WhatsApp Monitor
                     </Button>
                     <Button variant="ghost" className="text-muted-foreground hover:text-foreground pb-2" data-testid="client-profiles-tab">
