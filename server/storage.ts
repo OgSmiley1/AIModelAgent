@@ -192,9 +192,8 @@ export class MemStorage implements IStorage {
       priority: insertClient.priority || null,
       interests: insertClient.interests || null,
       tags: insertClient.tags || null,
-      purchaseHistory: insertClient.purchaseHistory || null,
       preferences: insertClient.preferences || null,
-      lastContactDate: insertClient.lastContactDate || null,
+      behaviorPatterns: insertClient.behaviorPatterns || null,
       followUpDate: insertClient.followUpDate || null,
       id,
       createdAt: now,
@@ -236,6 +235,7 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const conversation: Conversation = {
       ...insertConversation,
+      clientId: insertConversation.clientId || null,
       summary: insertConversation.summary || null,
       status: insertConversation.status || null,
       sentimentScore: insertConversation.sentimentScore || null,
@@ -342,6 +342,7 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const followUp: FollowUp = {
       ...insertFollowUp,
+      clientId: insertFollowUp.clientId || null,
       metadata: insertFollowUp.metadata || {},
       description: insertFollowUp.description || null,
       priority: insertFollowUp.priority || null,
@@ -542,6 +543,8 @@ export class MemStorage implements IStorage {
       const id = randomUUID();
       const setting: SystemSetting = {
         ...insertSetting,
+        description: insertSetting.description || null,
+        category: insertSetting.category || null,
         id,
         updatedAt: new Date(),
       };
@@ -623,6 +626,10 @@ export class MemStorage implements IStorage {
     const newDeal: Deal = {
       id,
       ...deal,
+      tags: deal.tags || null,
+      clientId: deal.clientId || null,
+      description: deal.description || null,
+      source: deal.source || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -657,6 +664,10 @@ export class MemStorage implements IStorage {
     const newForecast: SalesForecast = {
       id,
       ...forecast,
+      actualRevenue: forecast.actualRevenue || null,
+      actualDeals: forecast.actualDeals || null,
+      factors: forecast.factors || null,
+      methodology: forecast.methodology || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -685,6 +696,10 @@ export class MemStorage implements IStorage {
     const newEntry: LeadScoringHistory = {
       id,
       ...entry,
+      clientId: entry.clientId || null,
+      triggerEvent: entry.triggerEvent || null,
+      previousScore: entry.previousScore || null,
+      scoreChange: entry.scoreChange || null,
       createdAt: new Date(),
     };
     this.leadScoringHistory.set(id, newEntry);
