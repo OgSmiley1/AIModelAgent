@@ -143,6 +143,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import Maaz Clients Route
+  app.post("/api/clients/import-maaz", async (req, res) => {
+    try {
+      console.log("🎯 Starting Maaz client import...");
+      
+      // Load the extracted Maaz client data
+      const fs = await import('fs');
+      const maazClientsData = JSON.parse(fs.readFileSync('maaz_clients_detailed.json', 'utf8'));
+      console.log(`📊 Loaded ${maazClientsData.length} Maaz client records`);
+      
+      let importedCount = 0;
+      let errorCount = 0;
+      
+      for (let i = 0; i < maazClientsData.length; i++) {
+        const clientData = maazClientsData[i];
+        
+        try {
+          // Extract key client information
+          const clientId = clientData['CLIENT ID'] || '';
+          const name = clientId ? `Client ${clientId}` : `Maaz Client ${i + 1}`;
+          
+          // Get phone from any phone-related field
+          let phone = null;
+          for (const [key, value] of Object.entries(clientData)) {
+            if (key.toLowerCase().includes('phone') && value) {
+              phone = String(value);
+              break;
+            }
+          }
+          
+          // Get email from any email-related field  
+          let email = null;
+          for (const [key, value] of Object.entries(clientData)) {
+            if (key.toLowerCase().includes('email') && value) {
+              email = String(value);
+              break;
+            }
+          }
+          
+          // Get status
+          let status = (clientData['STATUS'] || 'prospect').toLowerCase();
+          if (!['prospect', 'active', 'inactive', 'vip'].includes(status)) {
+            status = 'prospect';
+          }
+          
+          // Get segment/priority
+          const segment = (clientData['CLIENT SEGMENT'] || 'medium').toLowerCase();
+          let priority = 'medium';
+          if (segment.includes('vip')) {
+            priority = 'vip';
+          } else if (segment.includes('high')) {
+            priority = 'high';
+          } else if (segment.includes('low')) {
+            priority = 'low';
+          }
+          
+          // Get interests (product references)
+          let interests = clientData['REFERENCE'] || '';
+          if (!interests) {
+            // Look for any product/reference fields
+            for (const [key, value] of Object.entries(clientData)) {
+              if (['reference', 'product', 'model'].some(term => key.toLowerCase().includes(term)) && value) {
+                interests = String(value);
+                break;
+              }
+            }
+          }
+          
+          // Get notes/comments
+          let notes = clientData['COMMENTS'] || '';
+          if (!notes) {
+            // Combine other relevant fields as notes
+            const noteParts = [];
+            for (const [key, value] of Object.entries(clientData)) {
+              if (!['CLIENT ID', 'STATUS', 'CLIENT SEGMENT', 'REFERENCE'].includes(key) && value) {
+                noteParts.push(`${key}: ${value}`);
+              }
+            }
+            notes = noteParts.slice(0, 3).join(' | '); // First 3 fields only
+          }
+          
+          // Get boutique/location
+          const location = clientData['BOUTIQUE'] || 'Phone sales Middle East';
+          
+          // Get dates
+          const requestDateStr = clientData['REQUEST DATE'] || '';
+          let lastInteraction = null;
+          if (requestDateStr) {
+            try {
+              // Parse date (format: 29/8/2025)
+              const [day, month, year] = requestDateStr.split('/');
+              lastInteraction = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+            } catch (e) {
+              // Date parsing failed, leave as null
+            }
+          }
+          
+          // Calculate lead score based on available data
+          let leadScore = 50; // Base score
+          if (status === 'active') leadScore += 20;
+          if (priority === 'vip') leadScore += 30;
+          else if (priority === 'high') leadScore += 15;
+          if (interests) leadScore += 10;
+          if (phone) leadScore += 10;
+          if (email) leadScore += 10;
+          
+          // Create client using storage
+          const clientToInsert = {
+            name,
+            phone,
+            email,
+            status,
+            priority,
+            interests,
+            location,
+            notes,
+            leadScore,
+            conversionProbability: leadScore > 70 ? 0.7 : 0.5,
+            lastInteraction,
+            tags: ['maaz', 'luxury_watches', 'vacheron_constantin'],
+            totalInteractions: 1,
+            followUpRequired: true,
+            followUpDate: new Date(Date.now() + 24 * 60 * 60 * 1000) // Tomorrow
+          };
+          
+          await storage.createClient(clientToInsert);
+          importedCount++;
+          
+        } catch (error) {
+          errorCount++;
+          console.log(`   ❌ Error importing client ${i + 1}: ${error.message}`);
+          continue;
+        }
+      }
+      
+      console.log(`✅ Import complete: ${importedCount} imported, ${errorCount} errors`);
+      
+      res.json({
+        success: true,
+        message: "Maaz clients imported successfully",
+        imported: importedCount,
+        errors: errorCount,
+        total: maazClientsData.length
+      });
+      
+    } catch (error) {
+      console.error('❌ Import failed:', error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to import Maaz clients",
+        message: error.message
+      });
+    }
+  });
+
   // Client management routes
   app.get("/api/clients", async (req, res) => {
     try {

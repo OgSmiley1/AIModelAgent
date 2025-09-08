@@ -138,7 +138,7 @@ export default function Dashboard() {
                         Access Advanced AI
                       </Button>
                       <div className="text-xs text-red-400 flex items-center">
-                        <span>Credentials: Smiley / Smiley@123jz</span>
+                        <span>🔒 Secure Access</span>
                       </div>
                     </div>
                   </div>
