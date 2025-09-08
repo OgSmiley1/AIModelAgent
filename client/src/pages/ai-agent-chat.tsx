@@ -70,6 +70,7 @@ export default function AIAgentChat() {
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [uploadedFiles, setUploadedFiles] = useState<FileAttachment[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedAiModel, setSelectedAiModel] = useState<'openai' | 'gemini'>('openai');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -86,7 +87,8 @@ export default function AIAgentChat() {
     mutationFn: async (messageData: { 
       message: string; 
       clientContext?: any; 
-      attachedFiles?: FileAttachment[] 
+      attachedFiles?: FileAttachment[];
+      aiModel?: 'openai' | 'gemini';
     }) => {
       return apiRequest('POST', '/api/ai-agent/chat', messageData);
     },
@@ -112,10 +114,11 @@ export default function AIAgentChat() {
 
   // File upload mutation
   const uploadFileMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, aiModel }: { file: File; aiModel: 'openai' | 'gemini' }) => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('analysisType', 'general');
+      formData.append('aiModel', aiModel);
       
       return apiRequest('POST', '/api/ai-agent/analyze-file', formData);
     },
@@ -149,8 +152,8 @@ export default function AIAgentChat() {
 
   // Client analysis mutation
   const analyzeClientMutation = useMutation({
-    mutationFn: async (clientId: string) => {
-      return apiRequest('POST', '/api/ai-agent/analyze-client', { clientId });
+    mutationFn: async ({ clientId, aiModel }: { clientId: string; aiModel: 'openai' | 'gemini' }) => {
+      return apiRequest('POST', '/api/ai-agent/analyze-client', { clientId, aiModel });
     },
     onSuccess: (response: any) => {
       const analysisMessage: ChatMessage = {
@@ -183,7 +186,8 @@ export default function AIAgentChat() {
     sendMessageMutation.mutate({
       message: inputMessage,
       clientContext,
-      attachedFiles: uploadedFiles
+      attachedFiles: uploadedFiles,
+      aiModel: selectedAiModel
     });
     
     setInputMessage("");
@@ -195,7 +199,7 @@ export default function AIAgentChat() {
     if (!files) return;
     
     Array.from(files).forEach(file => {
-      uploadFileMutation.mutate(file);
+      uploadFileMutation.mutate({ file, aiModel: selectedAiModel });
     });
   };
 
@@ -229,7 +233,7 @@ export default function AIAgentChat() {
       return;
     }
     
-    analyzeClientMutation.mutate(selectedClient);
+    analyzeClientMutation.mutate({ clientId: selectedClient, aiModel: selectedAiModel });
   };
 
   // Auto-scroll to bottom
@@ -265,6 +269,15 @@ export default function AIAgentChat() {
             <div className="p-4 border-b bg-card">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
+                  <Select value={selectedAiModel} onValueChange={(value: 'openai' | 'gemini') => setSelectedAiModel(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="openai">🤖 OpenAI</SelectItem>
+                      <SelectItem value="gemini">🧠 Gemini</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Select value={selectedClient} onValueChange={setSelectedClient}>
                     <SelectTrigger className="w-64">
                       <SelectValue placeholder="Select client for context" />
@@ -314,8 +327,11 @@ export default function AIAgentChat() {
                     }`}
                   >
                     {message.role === 'assistant' && (
-                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center relative">
                         <Bot size={16} className="text-primary-foreground" />
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full text-xs flex items-center justify-center">
+                          {selectedAiModel === 'gemini' ? '🧠' : '🤖'}
+                        </div>
                       </div>
                     )}
                     
@@ -354,13 +370,16 @@ export default function AIAgentChat() {
                 
                 {isProcessing && (
                   <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center relative">
                       <Bot size={16} className="text-primary-foreground animate-pulse" />
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full text-xs">
+                        {selectedAiModel === 'gemini' ? '🧠' : '🤖'}
+                      </div>
                     </div>
                     <div className="bg-muted p-3 rounded-lg">
                       <div className="flex items-center space-x-2">
                         <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
-                        <span>Thinking...</span>
+                        <span>{selectedAiModel === 'gemini' ? 'Gemini is thinking...' : 'AI is thinking...'}</span>
                       </div>
                     </div>
                   </div>
