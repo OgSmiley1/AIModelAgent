@@ -20,6 +20,7 @@ const navigation = [
   { name: "Clients", href: "/clients", icon: Users },
   { name: "Sales Forecasting", href: "/forecasting", icon: Brain },
   { name: "AI Chat", href: "/ai-chat", icon: MessageSquare },
+  { name: "AI Agent", href: "/ai-agent", icon: Brain },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Trip Planner", href: "/trip-planner", icon: Route },
   { name: "Analytics", href: "/analytics", icon: TrendingUp },

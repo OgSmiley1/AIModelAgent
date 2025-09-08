@@ -5,6 +5,7 @@ import { whatsAppService } from "./services/whatsapp";
 import { aiAnalyzer } from "./services/ai-analyzer";
 import { leadScoringService } from "./services/lead-scoring";
 import { salesForecastingService } from "./services/sales-forecasting";
+import { AIAgentService } from "./services/ai-agent";
 import { initializeWebSocket } from "./services/websocket";
 import { 
   insertClientSchema, 
@@ -723,6 +724,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(prediction);
     } catch (error) {
       res.status(500).json({ error: "Failed to predict deal outcome" });
+    }
+  });
+
+  // AI Agent routes
+  app.post("/api/ai-agent/chat", async (req, res) => {
+    try {
+      const { message, clientContext, attachedFiles = [] } = req.body;
+      
+      // Get conversation history and client data for context
+      const clients = await storage.getClients();
+      const context = {
+        clientData: clients,
+        currentClient: clientContext,
+        attachedFiles
+      };
+      
+      const response = await AIAgentService.processMessage(message, context);
+      
+      res.json({ response });
+    } catch (error) {
+      console.error('AI chat error:', error);
+      res.status(500).json({ error: "Failed to process message" });
+    }
+  });
+
+  app.post("/api/ai-agent/analyze-file", async (req, res) => {
+    try {
+      // Mock file upload and analysis for now
+      const file = req.files?.[0] || req.body;
+      
+      const mockFileAttachment = {
+        id: Date.now().toString(),
+        filename: file.filename || 'uploaded-file.pdf',
+        type: 'document',
+        url: '/mock-file-url',
+      };
+      
+      const analysis = await AIAgentService.analyzeFile(mockFileAttachment, 'general');
+      
+      res.json({
+        filename: mockFileAttachment.filename,
+        type: mockFileAttachment.type,
+        url: mockFileAttachment.url,
+        analysis
+      });
+    } catch (error) {
+      console.error('File analysis error:', error);
+      res.status(500).json({ error: "Failed to analyze file" });
+    }
+  });
+
+  app.post("/api/ai-agent/analyze-client", async (req, res) => {
+    try {
+      const { clientId } = req.body;
+      
+      const client = await storage.getClient(clientId);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      
+      const interactions = await storage.getInteractionsByClient(clientId);
+      const messages = await storage.getMessagesByClient(clientId);
+      const deals = await storage.getDealsByClient(clientId);
+      
+      const analysis = await AIAgentService.analyzeClient(client, interactions, messages, deals);
+      
+      res.json({
+        clientName: client.name,
+        ...analysis
+      });
+    } catch (error) {
+      console.error('Client analysis error:', error);
+      res.status(500).json({ error: "Failed to analyze client" });
+    }
+  });
+
+  app.post("/api/ai-agent/voice-input", async (req, res) => {
+    try {
+      const { audioText, clientContext } = req.body;
+      
+      const response = await AIAgentService.processVoiceInput(audioText, {
+        currentClient: clientContext
+      });
+      
+      res.json({ response });
+    } catch (error) {
+      console.error('Voice input error:', error);
+      res.status(500).json({ error: "Failed to process voice input" });
+    }
+  });
+
+  app.post("/api/ai-agent/generate-outreach", async (req, res) => {
+    try {
+      const { clientId, purpose, context } = req.body;
+      
+      const client = await storage.getClient(clientId);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      
+      const message = await AIAgentService.generateOutreachMessage(client, {
+        purpose,
+        ...context
+      });
+      
+      res.json({ message });
+    } catch (error) {
+      console.error('Outreach generation error:', error);
+      res.status(500).json({ error: "Failed to generate outreach message" });
     }
   });
 
