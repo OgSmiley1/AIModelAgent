@@ -31,6 +31,7 @@ export interface ClientAnalysisResult {
 export class AIAgentService {
   /**
    * Process a chat message with AI agent capabilities
+   * Supports both OpenAI and Gemini models
    */
   static async processMessage(
     message: string,
@@ -39,39 +40,47 @@ export class AIAgentService {
       clientData?: any[];
       currentClient?: any;
       attachedFiles?: FileAttachment[];
+      aiModel?: 'openai' | 'gemini';
     } = {}
   ): Promise<string> {
     try {
-      // Build context-aware system prompt
-      const systemPrompt = this.buildSystemPrompt(context);
+      const aiModel = context.aiModel || 'openai';
       
-      // Prepare messages for OpenAI
-      const messages: any[] = [
-        { role: 'system', content: systemPrompt }
-      ];
+      if (aiModel === 'gemini') {
+        // Use Gemini for processing
+        return await GeminiService.processMessage(message, context);
+      } else {
+        // Use OpenAI for processing (default)
+        const systemPrompt = this.buildSystemPrompt(context);
+        
+        // Prepare messages for OpenAI
+        const messages: any[] = [
+          { role: 'system', content: systemPrompt }
+        ];
 
-      // Add conversation history
-      if (context.conversationHistory) {
-        context.conversationHistory.slice(-10).forEach(msg => {
-          messages.push({
-            role: msg.role,
-            content: msg.content
+        // Add conversation history
+        if (context.conversationHistory) {
+          context.conversationHistory.slice(-10).forEach(msg => {
+            messages.push({
+              role: msg.role,
+              content: msg.content
+            });
           });
+        }
+
+        // Add current message
+        messages.push({ role: 'user', content: message });
+
+        // Process with OpenAI - using gpt-5 as it's the latest model
+        const response = await openai.chat.completions.create({
+          model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+          messages,
+          max_tokens: 1000,
+          temperature: 0.7,
         });
+
+        return response.choices[0].message.content || "I'm sorry, I couldn't process your request.";
       }
-
-      // Add current message
-      messages.push({ role: 'user', content: message });
-
-      // Process with OpenAI - using gpt-5 as it's the latest model
-      const response = await openai.chat.completions.create({
-        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-        messages,
-        max_tokens: 1000,
-        temperature: 0.7,
-      });
-
-      return response.choices[0].message.content || "I'm sorry, I couldn't process your request.";
     } catch (error) {
       console.error('AI Agent processing error:', error);
       return "I encountered an error processing your request. Please try again.";
@@ -79,11 +88,12 @@ export class AIAgentService {
   }
 
   /**
-   * Analyze uploaded files using AI
+   * Analyze uploaded files using AI (supports both OpenAI and Gemini)
    */
   static async analyzeFile(
     file: FileAttachment,
-    analysisType: 'general' | 'client_document' | 'contract' | 'report' = 'general'
+    analysisType: 'general' | 'client_document' | 'contract' | 'report' = 'general',
+    aiModel: 'openai' | 'gemini' = 'openai'
   ): Promise<any> {
     try {
       let analysisPrompt = '';
@@ -103,44 +113,62 @@ export class AIAgentService {
       }
 
       if (file.type === 'image') {
-        // For images, use vision model
-        const response = await openai.chat.completions.create({
-          model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: analysisPrompt },
-                { type: "image_url", image_url: { url: file.url } }
-              ],
-            },
-          ],
-          max_tokens: 500,
-        });
+        if (aiModel === 'gemini') {
+          // Use Gemini for image analysis
+          const imageData = file.url; // Assuming base64 data or URL
+          return await GeminiService.analyzeImage(imageData, analysisPrompt);
+        } else {
+          // Use OpenAI for image analysis
+          const response = await openai.chat.completions.create({
+            model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: analysisPrompt },
+                  { type: "image_url", image_url: { url: file.url } }
+                ],
+              },
+            ],
+            max_tokens: 500,
+          });
 
-        return {
-          type: 'image_analysis',
-          summary: response.choices[0].message.content,
-          insights: this.extractInsights(response.choices[0].message.content || ''),
-          timestamp: new Date()
-        };
+          return {
+            type: 'image_analysis',
+            summary: response.choices[0].message.content,
+            insights: this.extractInsights(response.choices[0].message.content || ''),
+            timestamp: new Date()
+          };
+        }
       } else {
-        // For documents, analyze text content (assuming it's been extracted)
-        const response = await openai.chat.completions.create({
-          model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-          messages: [
-            { role: 'system', content: analysisPrompt },
-            { role: 'user', content: `Please analyze this document: ${file.filename}` }
-          ],
-          max_tokens: 800,
-        });
+        if (aiModel === 'gemini') {
+          // Use Gemini for document analysis
+          const documentText = `Document: ${file.filename}\n${analysisPrompt}`;
+          const summary = await GeminiService.summarizeDocument(documentText);
+          return {
+            type: 'document_analysis',
+            summary,
+            insights: [summary.substring(0, 100) + '...'],
+            timestamp: new Date()
+          };
+        } else {
+          // Use OpenAI for document analysis
+          const response = await openai.chat.completions.create({
+            model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+            messages: [
+              { role: 'system', content: analysisPrompt },
+              { role: 'user', content: `Please analyze this document: ${file.filename}` }
+            ],
+            max_tokens: 800,
+          });
 
-        return {
-          type: 'document_analysis',
-          summary: response.choices[0].message.content,
-          insights: this.extractInsights(response.choices[0].message.content || ''),
-          timestamp: new Date()
-        };
+          return {
+            type: 'document_analysis',
+            summary: response.choices[0].message.content,
+            insights: this.extractInsights(response.choices[0].message.content || ''),
+            timestamp: new Date()
+          };
+        }
       }
     } catch (error) {
       console.error('File analysis error:', error);
@@ -154,64 +182,62 @@ export class AIAgentService {
   }
 
   /**
-   * Perform comprehensive client analysis
+   * Perform comprehensive client analysis (supports both OpenAI and Gemini)
    */
   static async analyzeClient(
     client: any,
     interactions: any[] = [],
     messages: any[] = [],
-    deals: any[] = []
+    deals: any[] = [],
+    aiModel: 'openai' | 'gemini' = 'openai'
   ): Promise<ClientAnalysisResult> {
     try {
-      const clientContext = {
-        profile: client,
-        recentInteractions: interactions.slice(-5),
-        recentMessages: messages.slice(-10),
-        activeDeals: deals.filter((d: any) => d.stage !== 'closed'),
-        leadScore: client.leadScore || 0,
-        conversionProbability: client.conversionProbability || 0
-      };
+      if (aiModel === 'gemini') {
+        // Use Gemini for client analysis
+        return await GeminiService.analyzeClient(client, interactions, messages, deals);
+      } else {
+        // Use OpenAI for client analysis
+        const analysisPrompt = `
+          Analyze this client comprehensively and provide strategic insights:
+          
+          Client Profile: ${JSON.stringify(client, null, 2)}
+          Recent Interactions: ${JSON.stringify(interactions.slice(-3), null, 2)}
+          Recent Messages: ${JSON.stringify(messages.slice(-5), null, 2)}
+          Active Deals: ${JSON.stringify(deals.filter((d: any) => d.stage !== 'closed'), null, 2)}
+          
+          Provide analysis in JSON format:
+          {
+            "insights": ["insight1", "insight2", ...],
+            "recommendations": ["rec1", "rec2", ...],
+            "nextActions": ["action1", "action2", ...],
+            "riskFactors": ["risk1", "risk2", ...],
+            "opportunities": ["opp1", "opp2", ...],
+            "confidenceScore": 0.85
+          }
+        `;
 
-      const analysisPrompt = `
-        Analyze this client comprehensively and provide strategic insights:
+        const response = await openai.chat.completions.create({
+          model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+          messages: [
+            { role: 'system', content: 'You are an expert sales analyst. Analyze client data and provide strategic insights in JSON format.' },
+            { role: 'user', content: analysisPrompt }
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 1000,
+        });
+
+        const analysis = JSON.parse(response.choices[0].message.content || '{}');
         
-        Client Profile: ${JSON.stringify(client, null, 2)}
-        Recent Interactions: ${JSON.stringify(interactions.slice(-3), null, 2)}
-        Recent Messages: ${JSON.stringify(messages.slice(-5), null, 2)}
-        Active Deals: ${JSON.stringify(deals.filter((d: any) => d.stage !== 'closed'), null, 2)}
-        
-        Provide analysis in JSON format:
-        {
-          "insights": ["insight1", "insight2", ...],
-          "recommendations": ["rec1", "rec2", ...],
-          "nextActions": ["action1", "action2", ...],
-          "riskFactors": ["risk1", "risk2", ...],
-          "opportunities": ["opp1", "opp2", ...],
-          "confidenceScore": 0.85
-        }
-      `;
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-        messages: [
-          { role: 'system', content: 'You are an expert sales analyst. Analyze client data and provide strategic insights in JSON format.' },
-          { role: 'user', content: analysisPrompt }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 1000,
-      });
-
-      const analysis = JSON.parse(response.choices[0].message.content || '{}');
-      
-      return {
-        clientId: client.id,
-        insights: analysis.insights || [],
-        recommendations: analysis.recommendations || [],
-        nextActions: analysis.nextActions || [],
-        riskFactors: analysis.riskFactors || [],
-        opportunities: analysis.opportunities || [],
-        confidenceScore: analysis.confidenceScore || 0.5
-      };
+        return {
+          clientId: client.id,
+          insights: analysis.insights || [],
+          recommendations: analysis.recommendations || [],
+          nextActions: analysis.nextActions || [],
+          riskFactors: analysis.riskFactors || [],
+          opportunities: analysis.opportunities || [],
+          confidenceScore: analysis.confidenceScore || 0.5
+        };
+      }
     } catch (error) {
       console.error('Client analysis error:', error);
       return {

@@ -730,14 +730,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Agent routes
   app.post("/api/ai-agent/chat", async (req, res) => {
     try {
-      const { message, clientContext, attachedFiles = [] } = req.body;
+      const { message, clientContext, attachedFiles = [], aiModel = 'openai' } = req.body;
       
       // Get conversation history and client data for context
       const clients = await storage.getClients();
       const context = {
         clientData: clients,
         currentClient: clientContext,
-        attachedFiles
+        attachedFiles,
+        aiModel
       };
       
       const response = await AIAgentService.processMessage(message, context);
@@ -753,6 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Mock file upload and analysis for now
       const file = req.files?.[0] || req.body;
+      const aiModel = req.body.aiModel || 'openai';
       
       const mockFileAttachment = {
         id: Date.now().toString(),
@@ -761,7 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url: '/mock-file-url',
       };
       
-      const analysis = await AIAgentService.analyzeFile(mockFileAttachment, 'general');
+      const analysis = await AIAgentService.analyzeFile(mockFileAttachment, 'general', aiModel);
       
       res.json({
         filename: mockFileAttachment.filename,
@@ -777,7 +779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/ai-agent/analyze-client", async (req, res) => {
     try {
-      const { clientId } = req.body;
+      const { clientId, aiModel = 'openai' } = req.body;
       
       const client = await storage.getClient(clientId);
       if (!client) {
@@ -788,7 +790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await storage.getMessagesByClient(clientId);
       const deals = await storage.getDealsByClient(clientId);
       
-      const analysis = await AIAgentService.analyzeClient(client, interactions, messages, deals);
+      const analysis = await AIAgentService.analyzeClient(client, interactions, messages, deals, aiModel);
       
       res.json({
         clientName: client.name,
