@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { whatsAppService } from "./services/whatsapp";
 import { aiAnalyzer } from "./services/ai-analyzer";
+import { leadScoringService } from "./services/lead-scoring";
+import { salesForecastingService } from "./services/sales-forecasting";
 import { initializeWebSocket } from "./services/websocket";
 import { 
   insertClientSchema, 
@@ -12,7 +14,10 @@ import {
   insertDocumentSchema,
   insertTripPlanSchema,
   insertAiConversationSchema,
-  insertSystemSettingSchema
+  insertSystemSettingSchema,
+  insertDealSchema,
+  insertSalesForecastSchema,
+  insertLeadScoringHistorySchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -418,6 +423,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate AI response" });
+    }
+  });
+
+  // Deal management routes
+  app.get("/api/deals", async (req, res) => {
+    try {
+      const deals = await storage.getAllDeals();
+      res.json(deals);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch deals" });
+    }
+  });
+
+  app.get("/api/deals/:id", async (req, res) => {
+    try {
+      const deal = await storage.getDeal(req.params.id);
+      if (!deal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      res.json(deal);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch deal" });
+    }
+  });
+
+  app.post("/api/deals", async (req, res) => {
+    try {
+      const dealData = insertDealSchema.parse(req.body);
+      const deal = await storage.createDeal(dealData);
+      res.json(deal);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create deal" });
+    }
+  });
+
+  app.put("/api/deals/:id", async (req, res) => {
+    try {
+      const updates = req.body;
+      const deal = await storage.updateDeal(req.params.id, updates);
+      res.json(deal);
+    } catch (error) {
+      if (error.message === "Deal not found") {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      res.status(500).json({ error: "Failed to update deal" });
+    }
+  });
+
+  app.delete("/api/deals/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteDeal(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete deal" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/deals", async (req, res) => {
+    try {
+      const deals = await storage.getDealsByClient(req.params.clientId);
+      res.json(deals);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client deals" });
+    }
+  });
+
+  // Sales forecasting routes
+  app.get("/api/forecasts", async (req, res) => {
+    try {
+      const forecasts = await storage.getAllSalesForecasts();
+      res.json(forecasts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch forecasts" });
+    }
+  });
+
+  app.post("/api/forecasts/generate", async (req, res) => {
+    try {
+      const { period = "monthly" } = req.body;
+      
+      const clients = await storage.getAllClients();
+      const deals = await storage.getAllDeals();
+      const messages = await storage.getRecentMessages(1000);
+      const interactions = [];
+      const historicalForecasts = await storage.getAllSalesForecasts();
+      
+      // Generate forecast using the service
+      const forecastData = await salesForecastingService.generateForecast(
+        period as 'weekly' | 'monthly' | 'quarterly',
+        clients,
+        deals,
+        messages,
+        interactions,
+        historicalForecasts
+      );
+      
+      // Save the forecast
+      const startDate = new Date();
+      const endDate = new Date();
+      if (period === 'weekly') {
+        endDate.setDate(endDate.getDate() + 7);
+      } else if (period === 'monthly') {
+        endDate.setMonth(endDate.getMonth() + 1);
+      } else {
+        endDate.setMonth(endDate.getMonth() + 3);
+      }
+      
+      const forecast = await storage.createSalesForecast({
+        period: forecastData.period,
+        startDate,
+        endDate,
+        predictedRevenue: forecastData.predictedRevenue,
+        predictedDeals: forecastData.predictedDeals,
+        confidence: forecastData.confidence,
+        factors: forecastData.factors,
+        methodology: 'ai_model'
+      });
+      
+      res.json({ ...forecast, recommendations: forecastData.recommendations });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate forecast" });
+    }
+  });
+
+  // Lead scoring routes
+  app.get("/api/clients/:clientId/lead-score", async (req, res) => {
+    try {
+      const client = await storage.getClient(req.params.clientId);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      
+      const messages = await storage.getMessagesByConversation(req.params.clientId);
+      const interactions = await storage.getInteractionsByClient(req.params.clientId);
+      const deals = await storage.getDealsByClient(req.params.clientId);
+      
+      const leadScoreData = await leadScoringService.calculateLeadScore(
+        client,
+        messages,
+        interactions,
+        deals
+      );
+      
+      res.json(leadScoreData);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate lead score" });
+    }
+  });
+
+  app.post("/api/clients/:clientId/update-lead-score", async (req, res) => {
+    try {
+      const client = await storage.getClient(req.params.clientId);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      
+      const messages = await storage.getMessagesByConversation(req.params.clientId);
+      const interactions = await storage.getInteractionsByClient(req.params.clientId);
+      const deals = await storage.getDealsByClient(req.params.clientId);
+      
+      const leadScoreData = await leadScoringService.calculateLeadScore(
+        client,
+        messages,
+        interactions,
+        deals
+      );
+      
+      // Update client with new score and related data
+      const updatedClient = await storage.updateClientLeadScore(
+        req.params.clientId,
+        leadScoreData.score,
+        leadScoreData.factors,
+        0.85 // confidence
+      );
+      
+      // Calculate conversion probability and next best action
+      const conversionProbability = await leadScoringService.predictConversionProbability(
+        updatedClient,
+        []
+      );
+      
+      const nextBestAction = leadScoringService.generateNextBestAction(
+        updatedClient,
+        leadScoreData.factors
+      );
+      
+      // Update client with additional AI insights
+      await storage.updateClient(req.params.clientId, {
+        conversionProbability,
+        nextBestAction,
+        buyingSignals: leadScoreData.insights.filter(insight => insight.includes("buying")),
+        engagementLevel: leadScoreData.score > 80 ? 'very_high' : 
+                       leadScoreData.score > 60 ? 'high' :
+                       leadScoreData.score > 40 ? 'medium' : 'low'
+      });
+      
+      res.json({
+        ...leadScoreData,
+        conversionProbability,
+        nextBestAction
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update lead score" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/scoring-history", async (req, res) => {
+    try {
+      const history = await storage.getLeadScoringHistory(req.params.clientId);
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch scoring history" });
+    }
+  });
+
+  // Predict deal outcome
+  app.post("/api/deals/:dealId/predict-outcome", async (req, res) => {
+    try {
+      const deal = await storage.getDeal(req.params.dealId);
+      if (!deal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      
+      const client = await storage.getClient(deal.clientId!);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      
+      const allDeals = await storage.getAllDeals();
+      const similarDeals = allDeals.filter(d => 
+        d.value >= deal.value * 0.7 && 
+        d.value <= deal.value * 1.3 &&
+        d.id !== deal.id
+      );
+      
+      const prediction = await salesForecastingService.predictDealOutcome(
+        deal,
+        client,
+        similarDeals
+      );
+      
+      res.json(prediction);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to predict deal outcome" });
     }
   });
 

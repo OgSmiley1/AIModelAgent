@@ -8,7 +8,10 @@ import {
   type Document, type InsertDocument,
   type TripPlan, type InsertTripPlan,
   type AiConversation, type InsertAiConversation,
-  type SystemSetting, type InsertSystemSetting
+  type SystemSetting, type InsertSystemSetting,
+  type Deal, type InsertDeal,
+  type SalesForecast, type InsertSalesForecast,
+  type LeadScoringHistory, type InsertLeadScoringHistory
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -78,6 +81,25 @@ export interface IStorage {
   // Analytics operations
   getDashboardStats(): Promise<any>;
   getClientAnalytics(clientId: string): Promise<any>;
+
+  // Deal operations
+  getDeal(id: string): Promise<Deal | undefined>;
+  getDealsByClient(clientId: string): Promise<Deal[]>;
+  getAllDeals(): Promise<Deal[]>;
+  createDeal(deal: InsertDeal): Promise<Deal>;
+  updateDeal(id: string, updates: Partial<Deal>): Promise<Deal>;
+  deleteDeal(id: string): Promise<boolean>;
+
+  // Sales forecasting operations
+  getSalesForecast(id: string): Promise<SalesForecast | undefined>;
+  getAllSalesForecasts(): Promise<SalesForecast[]>;
+  createSalesForecast(forecast: InsertSalesForecast): Promise<SalesForecast>;
+  updateSalesForecast(id: string, updates: Partial<SalesForecast>): Promise<SalesForecast>;
+
+  // Lead scoring operations
+  getLeadScoringHistory(clientId: string): Promise<LeadScoringHistory[]>;
+  createLeadScoringEntry(entry: InsertLeadScoringHistory): Promise<LeadScoringHistory>;
+  updateClientLeadScore(clientId: string, score: number, factors: any, confidence: number): Promise<Client>;
 }
 
 export class MemStorage implements IStorage {
@@ -91,6 +113,9 @@ export class MemStorage implements IStorage {
   private tripPlans: Map<string, TripPlan> = new Map();
   private aiConversations: Map<string, AiConversation> = new Map();
   private systemSettings: Map<string, SystemSetting> = new Map();
+  private deals: Map<string, Deal> = new Map();
+  private salesForecasts: Map<string, SalesForecast> = new Map();
+  private leadScoringHistory: Map<string, LeadScoringHistory> = new Map();
 
   constructor() {
     // Initialize with some default system settings
@@ -578,6 +603,119 @@ export class MemStorage implements IStorage {
       avgSentiment: client.sentimentScore || 0,
       lastInteraction: client.lastInteraction,
     };
+  }
+
+  // Deal operations
+  async getDeal(id: string): Promise<Deal | undefined> {
+    return this.deals.get(id);
+  }
+
+  async getDealsByClient(clientId: string): Promise<Deal[]> {
+    return Array.from(this.deals.values()).filter(deal => deal.clientId === clientId);
+  }
+
+  async getAllDeals(): Promise<Deal[]> {
+    return Array.from(this.deals.values());
+  }
+
+  async createDeal(deal: InsertDeal): Promise<Deal> {
+    const id = randomUUID();
+    const newDeal: Deal = {
+      id,
+      ...deal,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.deals.set(id, newDeal);
+    return newDeal;
+  }
+
+  async updateDeal(id: string, updates: Partial<Deal>): Promise<Deal> {
+    const deal = this.deals.get(id);
+    if (!deal) throw new Error("Deal not found");
+    
+    const updatedDeal = { ...deal, ...updates, updatedAt: new Date() };
+    this.deals.set(id, updatedDeal);
+    return updatedDeal;
+  }
+
+  async deleteDeal(id: string): Promise<boolean> {
+    return this.deals.delete(id);
+  }
+
+  // Sales forecasting operations
+  async getSalesForecast(id: string): Promise<SalesForecast | undefined> {
+    return this.salesForecasts.get(id);
+  }
+
+  async getAllSalesForecasts(): Promise<SalesForecast[]> {
+    return Array.from(this.salesForecasts.values());
+  }
+
+  async createSalesForecast(forecast: InsertSalesForecast): Promise<SalesForecast> {
+    const id = randomUUID();
+    const newForecast: SalesForecast = {
+      id,
+      ...forecast,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.salesForecasts.set(id, newForecast);
+    return newForecast;
+  }
+
+  async updateSalesForecast(id: string, updates: Partial<SalesForecast>): Promise<SalesForecast> {
+    const forecast = this.salesForecasts.get(id);
+    if (!forecast) throw new Error("Sales forecast not found");
+    
+    const updatedForecast = { ...forecast, ...updates, updatedAt: new Date() };
+    this.salesForecasts.set(id, updatedForecast);
+    return updatedForecast;
+  }
+
+  // Lead scoring operations
+  async getLeadScoringHistory(clientId: string): Promise<LeadScoringHistory[]> {
+    return Array.from(this.leadScoringHistory.values())
+      .filter(entry => entry.clientId === clientId)
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
+  async createLeadScoringEntry(entry: InsertLeadScoringHistory): Promise<LeadScoringHistory> {
+    const id = randomUUID();
+    const newEntry: LeadScoringHistory = {
+      id,
+      ...entry,
+      createdAt: new Date(),
+    };
+    this.leadScoringHistory.set(id, newEntry);
+    return newEntry;
+  }
+
+  async updateClientLeadScore(clientId: string, score: number, factors: any, confidence: number): Promise<Client> {
+    const client = this.clients.get(clientId);
+    if (!client) throw new Error("Client not found");
+
+    const updates = {
+      leadScore: score,
+      lastScoreUpdate: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const updatedClient = { ...client, ...updates };
+    this.clients.set(clientId, updatedClient);
+
+    // Create scoring history entry
+    await this.createLeadScoringEntry({
+      clientId,
+      score,
+      factors,
+      confidence,
+      previousScore: client.leadScore || 0,
+      scoreChange: score - (client.leadScore || 0),
+      triggerEvent: 'manual_update'
+    });
+
+    return updatedClient;
   }
 }
 
