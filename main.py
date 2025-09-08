@@ -18,7 +18,7 @@ print("--- Sending code to ChatGPT for auditing... ---")
 
 # This is the prompt that tells the AI what to do
 response = client.chat.completions.create(
-  model="gpt-4o",  # Or "gpt-3.5-turbo"
+  model="gpt-3.5-turbo",  # Using less expensive model
   messages=[
     {
       "role": "system",
