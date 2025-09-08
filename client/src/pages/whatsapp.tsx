@@ -5,6 +5,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { MessageFeed } from "@/components/whatsapp/message-feed";
 import { ResponseGenerator } from "@/components/whatsapp/response-generator";
 import { ConnectionModal } from "@/components/whatsapp/connection-modal";
+import { WhatsAppWebInterface } from "@/components/whatsapp/whatsapp-web-interface";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,8 @@ export default function WhatsApp() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [liveMessages, setLiveMessages] = useState<LiveMessage[]>([]);
+  const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [showWebInterface, setShowWebInterface] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch WhatsApp status
@@ -78,10 +81,29 @@ export default function WhatsApp() {
     urgency: "medium"
   };
 
+  // Handle connection success
+  const handleConnectionSuccess = () => {
+    setWhatsappConnected(true);
+    setShowWebInterface(true);
+    setConnectionModalOpen(false);
+  };
+
+  // If WhatsApp Web interface is active, show it full screen
+  if (showWebInterface) {
+    return (
+      <WhatsAppWebInterface 
+        onBack={() => {
+          setShowWebInterface(false);
+          setWhatsappConnected(false);
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar 
-        whatsappConnected={whatsappStatus?.connected || false}
+        whatsappConnected={whatsappConnected || whatsappStatus?.connected || false}
         aiOnline={connected}
         databaseActive={true}
       />
@@ -115,12 +137,23 @@ export default function WhatsApp() {
                       {whatsappStatus?.connected ? "Connected" : "Disconnected"}
                     </Badge>
                     
-                    {!whatsappStatus?.connected && (
+                    {!whatsappConnected && !whatsappStatus?.connected && (
                       <Button 
                         onClick={() => setConnectionModalOpen(true)}
+                        className="luxury-button"
                         data-testid="connect-whatsapp-btn"
                       >
                         Connect WhatsApp
+                      </Button>
+                    )}
+                    
+                    {(whatsappConnected || whatsappStatus?.connected) && (
+                      <Button 
+                        onClick={() => setShowWebInterface(true)}
+                        className="luxury-button"
+                        data-testid="open-whatsapp-web"
+                      >
+                        Open WhatsApp Web
                       </Button>
                     )}
                   </div>
@@ -275,6 +308,7 @@ export default function WhatsApp() {
       <ConnectionModal 
         open={connectionModalOpen}
         onOpenChange={setConnectionModalOpen}
+        onConnectionSuccess={handleConnectionSuccess}
       />
     </div>
   );
