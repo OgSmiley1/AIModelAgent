@@ -6,6 +6,8 @@ import { aiAnalyzer } from "./services/ai-analyzer";
 import { leadScoringService } from "./services/lead-scoring";
 import { salesForecastingService } from "./services/sales-forecasting";
 import { AIAgentService } from "./services/ai-agent";
+import { AdvancedAI } from "./services/advanced-ai";
+import { authenticateAdvancedAI, requireAdvancedAuth, AuthenticatedRequest } from "./middleware/auth";
 import { initializeWebSocket } from "./services/websocket";
 import { 
   insertClientSchema, 
@@ -835,6 +837,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Outreach generation error:', error);
       res.status(500).json({ error: "Failed to generate outreach message" });
+    }
+  });
+
+  // Advanced AI Authentication Route
+  app.post("/api/auth/advanced-ai", authenticateAdvancedAI, (req: AuthenticatedRequest, res) => {
+    res.json({
+      success: true,
+      message: "Advanced AI access granted",
+      user: req.user,
+      capabilities: [
+        "Unlimited AI processing",
+        "Advanced psychological analysis", 
+        "Real-time internet search",
+        "Self-learning capabilities",
+        "Advanced persuasion techniques"
+      ]
+    });
+  });
+
+  // Advanced AI Processing Routes
+  app.post("/api/advanced-ai/process", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { 
+        message, 
+        context = {}, 
+        aiModel = 'gemini',
+        userKnowledge = [],
+        learnedInsights = []
+      } = req.body;
+
+      const advancedContext = {
+        userKnowledge,
+        learnedInsights,
+        conversationHistory: context.conversationHistory || [],
+        internetSearchResults: context.internetSearchResults || [],
+        clientProfiles: context.clientProfiles || [],
+        persuasionTechniques: context.persuasionTechniques || []
+      };
+
+      const response = await AdvancedAI.processAdvancedRequest(message, advancedContext, aiModel);
+      
+      res.json({ 
+        response,
+        aiModel,
+        capabilities: "unlimited",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Advanced AI processing error:', error);
+      res.status(500).json({ error: "Advanced AI processing failed" });
+    }
+  });
+
+  // Client Psychology Analysis Route
+  app.post("/api/advanced-ai/analyze-psychology", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { clientId, background, goals } = req.body;
+      
+      let client = null;
+      if (clientId) {
+        client = await storage.getClient(clientId);
+        if (!client) {
+          return res.status(404).json({ error: "Client not found" });
+        }
+      }
+
+      const analysis = await AdvancedAI.analyzeClientPsychology(
+        client,
+        background || "Professional background",
+        goals || ["Business success", "Efficiency", "Recognition"]
+      );
+      
+      res.json({
+        clientId,
+        clientName: client?.name || "Target Analysis",
+        analysis,
+        advanced: true,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Psychology analysis error:', error);
+      res.status(500).json({ error: "Psychology analysis failed" });
+    }
+  });
+
+  // Persuasive Content Generation Route
+  app.post("/api/advanced-ai/generate-content", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { target, objective, context, techniques = [] } = req.body;
+      
+      const content = await AdvancedAI.generatePersuasiveContent(
+        target,
+        objective,
+        context,
+        techniques
+      );
+      
+      res.json({
+        ...content,
+        generated: new Date().toISOString(),
+        advanced: true
+      });
+    } catch (error) {
+      console.error('Content generation error:', error);
+      res.status(500).json({ error: "Content generation failed" });
+    }
+  });
+
+  // Internet Search Route
+  app.post("/api/advanced-ai/search", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { query } = req.body;
+      
+      const results = await AdvancedAI.searchInternet(query);
+      
+      res.json({
+        query,
+        results,
+        timestamp: new Date().toISOString(),
+        source: "Advanced AI Search"
+      });
+    } catch (error) {
+      console.error('Internet search error:', error);
+      res.status(500).json({ error: "Search failed" });
     }
   });
 
