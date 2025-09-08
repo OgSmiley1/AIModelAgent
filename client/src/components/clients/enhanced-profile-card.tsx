@@ -493,16 +493,101 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
           </>
         )}
 
-        {/* Follow-up indicator */}
+        {/* Enhanced Follow-up Section */}
         {client.followUpRequired && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex items-center">
-              <Calendar size={16} className="mr-2 text-yellow-600" />
-              <span className="text-sm font-medium text-yellow-800">Follow-up Required</span>
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
+                <Calendar size={16} className="mr-2 text-yellow-600" />
+                <span className="text-sm font-medium text-yellow-800">Follow-up Required</span>
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="text-xs h-7 px-2"
+                data-testid={`schedule-followup-${client.id}`}
+              >
+                <Plus size={12} className="mr-1" />
+                Schedule
+              </Button>
             </div>
+            
             {client.followUpDate && (
-              <div className="text-xs text-yellow-600 mt-1">
-                Due: {new Date(client.followUpDate).toLocaleDateString()}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-yellow-600">
+                    Due: {new Date(client.followUpDate).toLocaleDateString()}
+                  </div>
+                  <div className="text-xs">
+                    {(() => {
+                      const daysUntil = Math.ceil((new Date(client.followUpDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                      if (daysUntil < 0) return <span className="text-red-600 font-medium">Overdue by {Math.abs(daysUntil)} days</span>;
+                      if (daysUntil === 0) return <span className="text-orange-600 font-medium">Due Today</span>;
+                      if (daysUntil === 1) return <span className="text-yellow-600">Due Tomorrow</span>;
+                      return <span className="text-green-600">{daysUntil} days left</span>;
+                    })()}
+                  </div>
+                </div>
+                
+                {/* Follow-up Priority Indicator */}
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center">
+                    <span className="text-xs text-muted-foreground">Priority:</span>
+                    <div className={`ml-1 w-2 h-2 rounded-full ${
+                      client.priority === 'vip' ? 'bg-purple-500' :
+                      client.priority === 'high' ? 'bg-red-500' :
+                      client.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}></div>
+                  </div>
+                  
+                  {client.leadScore && client.leadScore > 80 && (
+                    <div className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                      🔥 Hot Lead
+                    </div>
+                  )}
+                  
+                  {client.engagementLevel === 'very_high' && (
+                    <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                      ⚡ Highly Engaged
+                    </div>
+                  )}
+                </div>
+                
+                {/* Quick Actions */}
+                <div className="flex space-x-2 mt-3">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-xs h-6 px-2 text-blue-600 hover:bg-blue-50"
+                    data-testid={`quick-call-${client.id}`}
+                  >
+                    📞 Call
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-xs h-6 px-2 text-green-600 hover:bg-green-50"
+                    data-testid={`quick-whatsapp-${client.id}`}
+                  >
+                    💬 WhatsApp
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-xs h-6 px-2 text-purple-600 hover:bg-purple-50"
+                    data-testid={`quick-email-${client.id}`}
+                  >
+                    ✉️ Email
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-xs h-6 px-2 text-gray-600 hover:bg-gray-50"
+                    data-testid={`mark-completed-${client.id}`}
+                  >
+                    ✅ Done
+                  </Button>
+                </div>
               </div>
             )}
           </div>
