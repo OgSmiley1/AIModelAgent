@@ -15,12 +15,12 @@ export function Topbar({
   subtitle = "Real-time client management and AI automation"
 }: TopbarProps) {
   return (
-    <header className="bg-card border-b border-border p-4" data-testid="topbar">
+    <header className="luxury-card border-b border-primary/20 p-6" data-testid="topbar">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-6">
           <div>
-            <h2 className="text-xl font-semibold" data-testid="page-title">{title}</h2>
-            <p className="text-sm text-muted-foreground" data-testid="page-subtitle">{subtitle}</p>
+            <h2 className="text-2xl vacheron-title" data-testid="page-title">{title}</h2>
+            <p className="text-sm text-muted-foreground premium-text" data-testid="page-subtitle">{subtitle}</p>
           </div>
         </div>
         
@@ -53,12 +53,12 @@ export function Topbar({
           <Button 
             variant="ghost" 
             size="sm"
-            className="w-8 h-8 rounded-full p-0"
+            className="w-10 h-10 rounded-full p-0 luxury-button"
             data-testid="user-avatar"
           >
-            <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                U
+            <Avatar className="w-10 h-10">
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm luxury-button">
+                S
               </AvatarFallback>
             </Avatar>
           </Button>
