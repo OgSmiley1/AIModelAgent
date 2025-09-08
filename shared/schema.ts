@@ -30,10 +30,22 @@ export const clients = pgTable("clients", {
   conversionStage: text("conversion_stage").default("awareness"), // awareness, interest, consideration, intent, purchase
   lifetimeValue: real("lifetime_value").default(0),
   sentimentScore: real("sentiment_score").default(0),
+  leadScore: real("lead_score").default(0), // AI-calculated lead score 0-100
+  conversionProbability: real("conversion_probability").default(0), // Predicted conversion probability 0-1
+  predictedValue: real("predicted_value").default(0), // Predicted deal value
+  engagementLevel: text("engagement_level").default("low"), // low, medium, high, very_high
+  buyingSignals: text("buying_signals").array(), // Array of detected buying signals
+  riskFactors: text("risk_factors").array(), // Array of risk factors
+  nextBestAction: text("next_best_action"), // AI-suggested next action
+  location: text("location"),
+  budget: real("budget"),
+  timeframe: text("timeframe"), // immediate, short_term, medium_term, long_term
+  decisionMaker: boolean("decision_maker").default(false),
   notes: text("notes"),
   tags: text("tags").array(),
   followUpRequired: boolean("follow_up_required").default(false),
   followUpDate: timestamp("follow_up_date"),
+  lastScoreUpdate: timestamp("last_score_update").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -155,6 +167,58 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Sales forecasting table
+export const salesForecasts = pgTable("sales_forecasts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  period: text("period").notNull(), // weekly, monthly, quarterly
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  predictedRevenue: real("predicted_revenue").notNull(),
+  predictedDeals: integer("predicted_deals").notNull(),
+  confidence: real("confidence").notNull(), // 0-1
+  actualRevenue: real("actual_revenue").default(0),
+  actualDeals: integer("actual_deals").default(0),
+  factors: jsonb("factors"), // Factors influencing the forecast
+  methodology: text("methodology").default("ai_model"), // ai_model, historical, pipeline
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Lead scoring history table
+export const leadScoringHistory = pgTable("lead_scoring_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id),
+  score: real("score").notNull(),
+  factors: jsonb("factors").notNull(), // Detailed scoring factors
+  triggerEvent: text("trigger_event"), // What caused the score update
+  previousScore: real("previous_score"),
+  scoreChange: real("score_change"),
+  confidence: real("confidence").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Deals/opportunities table
+export const deals = pgTable("deals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  value: real("value").notNull(),
+  currency: text("currency").default("USD"),
+  stage: text("stage").default("prospecting"), // prospecting, qualification, proposal, negotiation, closed_won, closed_lost
+  probability: real("probability").default(0.5), // 0-1
+  expectedCloseDate: timestamp("expected_close_date"),
+  actualCloseDate: timestamp("actual_close_date"),
+  source: text("source"), // whatsapp, email, referral, cold_outreach
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  competitorInfo: text("competitor_info"),
+  nextSteps: text("next_steps"),
+  lostReason: text("lost_reason"),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -210,6 +274,23 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
   updatedAt: true,
 });
 
+export const insertSalesForecastSchema = createInsertSchema(salesForecasts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLeadScoringHistorySchema = createInsertSchema(leadScoringHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertDealSchema = createInsertSchema(deals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -240,3 +321,12 @@ export type AiConversation = typeof aiConversations.$inferSelect;
 
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
+
+export type InsertSalesForecast = z.infer<typeof insertSalesForecastSchema>;
+export type SalesForecast = typeof salesForecasts.$inferSelect;
+
+export type InsertLeadScoringHistory = z.infer<typeof insertLeadScoringHistorySchema>;
+export type LeadScoringHistory = typeof leadScoringHistory.$inferSelect;
+
+export type InsertDeal = z.infer<typeof insertDealSchema>;
+export type Deal = typeof deals.$inferSelect;
