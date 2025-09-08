@@ -19,7 +19,7 @@ import {
   Bot,
   User,
   Globe,
-  Psychology,
+  Zap as Psychology,
   Lightbulb,
   TrendingUp,
   AlertTriangle
