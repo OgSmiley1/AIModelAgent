@@ -9,7 +9,8 @@ import {
   Route, 
   TrendingUp, 
   Settings,
-  Circle
+  Circle,
+  Brain
 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 
@@ -17,6 +18,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
   { name: "WhatsApp", href: "/whatsapp", icon: SiWhatsapp, status: "live" },
   { name: "Clients", href: "/clients", icon: Users },
+  { name: "Sales Forecasting", href: "/forecasting", icon: Brain },
   { name: "AI Chat", href: "/ai-chat", icon: MessageSquare },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Trip Planner", href: "/trip-planner", icon: Route },

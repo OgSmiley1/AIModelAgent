@@ -405,6 +405,57 @@ export default function Clients() {
             </Dialog>
           </div>
 
+          {/* Analytics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Clients</p>
+                    <p className="text-2xl font-bold">{totalClients}</p>
+                  </div>
+                  <Users className="text-blue-500" size={24} />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Avg Lead Score</p>
+                    <p className="text-2xl font-bold">{avgLeadScore.toFixed(0)}</p>
+                  </div>
+                  <Brain className="text-purple-500" size={24} />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">High-Score Clients</p>
+                    <p className="text-2xl font-bold">{highScoreClients}</p>
+                  </div>
+                  <Target className="text-green-500" size={24} />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Avg Conversion</p>
+                    <p className="text-2xl font-bold">{avgConversionProb.toFixed(0)}%</p>
+                  </div>
+                  <BarChart3 className="text-orange-500" size={24} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Client Stats */}
           <div className="grid grid-cols-4 gap-4 mb-6">
             {Object.entries(clientsByStatus).map(([status, statusClients]) => (
@@ -463,7 +514,7 @@ export default function Clients() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" data-testid="clients-grid">
                   {filteredClients.map((client) => (
-                    <ProfileCard key={client.id} client={client} />
+                    <EnhancedProfileCard key={client.id} client={client} />
                   ))}
                 </div>
               )}
@@ -481,7 +532,7 @@ export default function Clients() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {clientsByStatus[status].map((client) => (
-                      <ProfileCard key={client.id} client={client} />
+                      <EnhancedProfileCard key={client.id} client={client} />
                     ))}
                   </div>
                 )}

@@ -363,7 +363,7 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
           {isEditing ? (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <Select value={editData.status} onValueChange={(value) => setEditData({ ...editData, status: value })}>
+                <Select value={editData.status} onValueChange={(value) => setEditData({ ...editData, status: value as 'prospect' | 'active' | 'inactive' | 'vip' })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -375,7 +375,7 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
                   </SelectContent>
                 </Select>
                 
-                <Select value={editData.priority} onValueChange={(value) => setEditData({ ...editData, priority: value })}>
+                <Select value={editData.priority} onValueChange={(value) => setEditData({ ...editData, priority: value as 'low' | 'medium' | 'high' | 'critical' | 'vip' })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -400,7 +400,7 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
                   />
                 </div>
                 
-                <Select value={editData.timeframe} onValueChange={(value) => setEditData({ ...editData, timeframe: value })}>
+                <Select value={editData.timeframe} onValueChange={(value) => setEditData({ ...editData, timeframe: value as 'immediate' | 'short_term' | 'medium_term' | 'long_term' })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

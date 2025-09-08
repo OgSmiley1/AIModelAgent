@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import WhatsApp from "@/pages/whatsapp";
 import Clients from "@/pages/clients";
+import Forecasting from "@/pages/forecasting";
 import AIChat from "@/pages/ai-chat";
 import Documents from "@/pages/documents";
 import TripPlanner from "@/pages/trip-planner";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/whatsapp" component={WhatsApp} />
       <Route path="/clients" component={Clients} />
+      <Route path="/forecasting" component={Forecasting} />
       <Route path="/ai-chat" component={AIChat} />
       <Route path="/documents" component={Documents} />
       <Route path="/trip-planner" component={TripPlanner} />

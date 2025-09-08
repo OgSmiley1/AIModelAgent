@@ -61,6 +61,26 @@ export interface ClientProfileData {
   followUpDate?: Date;
   notes?: string;
   tags?: string[];
+  
+  // AI-powered lead scoring and forecasting fields
+  leadScore?: number;
+  conversionProbability?: number;
+  predictedValue?: number;
+  engagementLevel?: 'low' | 'medium' | 'high' | 'very_high';
+  buyingSignals?: string[];
+  riskFactors?: string[];
+  nextBestAction?: string;
+  
+  // Enhanced business information
+  location?: string;
+  budget?: number;
+  timeframe?: 'immediate' | 'short_term' | 'medium_term' | 'long_term';
+  decisionMaker?: boolean;
+  
+  // Tracking timestamps
+  lastScoreUpdate?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ConversationData {
