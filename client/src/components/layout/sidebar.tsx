@@ -11,7 +11,8 @@ import {
   Settings,
   Circle,
   Brain,
-  Shield
+  Shield,
+  Crown
 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 
@@ -19,6 +20,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
   { name: "WhatsApp", href: "/whatsapp", icon: SiWhatsapp, status: "live" },
   { name: "Clients", href: "/clients", icon: Users },
+  { name: "Collection", href: "/watch-catalog", icon: Crown },
   { name: "Sales Forecasting", href: "/forecasting", icon: Brain },
   { name: "AI Chat", href: "/ai-chat", icon: MessageSquare },
   { name: "AI Agent", href: "/ai-agent", icon: Brain },
