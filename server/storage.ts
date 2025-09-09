@@ -15,10 +15,7 @@ import {
   type GithubRepository, type InsertGithubRepository,
   type SelfEditingHistory, type InsertSelfEditingHistory,
   type AiLearningDocument, type InsertAiLearningDocument,
-  type CodeAnalysisReport, type InsertCodeAnalysisReport,
-  type WatchCollection, type InsertWatchCollection,
-  type ClientWatchPreference, type InsertClientWatchPreference,
-  type WatchPriceHistory, type InsertWatchPriceHistory
+  type CodeAnalysisReport, type InsertCodeAnalysisReport
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -134,30 +131,6 @@ export interface IStorage {
   getCodeAnalysisReport(id: string): Promise<CodeAnalysisReport | undefined>;
   getCodeAnalysisReportsByRepository(repositoryId: string): Promise<CodeAnalysisReport[]>;
   createCodeAnalysisReport(report: InsertCodeAnalysisReport): Promise<CodeAnalysisReport>;
-
-  // Watch collection operations
-  getWatch(id: string): Promise<WatchCollection | undefined>;
-  getWatchByModelCode(modelCode: string): Promise<WatchCollection | undefined>;
-  getAllWatches(): Promise<WatchCollection[]>;
-  getWatchesByCollection(collection: string): Promise<WatchCollection[]>;
-  getWatchesByCategory(category: string): Promise<WatchCollection[]>;
-  getAvailableWatches(): Promise<WatchCollection[]>;
-  createWatch(watch: InsertWatchCollection): Promise<WatchCollection>;
-  updateWatch(id: string, updates: Partial<WatchCollection>): Promise<WatchCollection>;
-  deleteWatch(id: string): Promise<boolean>;
-  bulkUpdateWatchPrices(updates: {id: string, priceNumeric: number}[]): Promise<WatchCollection[]>;
-
-  // Client watch preference operations
-  getClientWatchPreference(id: string): Promise<ClientWatchPreference | undefined>;
-  getClientWatchPreferences(clientId: string): Promise<ClientWatchPreference[]>;
-  getWatchClientPreferences(watchId: string): Promise<ClientWatchPreference[]>;
-  createClientWatchPreference(preference: InsertClientWatchPreference): Promise<ClientWatchPreference>;
-  updateClientWatchPreference(id: string, updates: Partial<ClientWatchPreference>): Promise<ClientWatchPreference>;
-  deleteClientWatchPreference(id: string): Promise<boolean>;
-
-  // Watch price history operations
-  getWatchPriceHistory(watchId: string): Promise<WatchPriceHistory[]>;
-  createWatchPriceHistoryEntry(entry: InsertWatchPriceHistory): Promise<WatchPriceHistory>;
 }
 
 export class MemStorage implements IStorage {
@@ -178,9 +151,6 @@ export class MemStorage implements IStorage {
   private selfEditingHistory: Map<string, SelfEditingHistory> = new Map();
   private aiLearningDocuments: Map<string, AiLearningDocument> = new Map();
   private codeAnalysisReports: Map<string, CodeAnalysisReport> = new Map();
-  private watchCollection: Map<string, WatchCollection> = new Map();
-  private clientWatchPreferences: Map<string, ClientWatchPreference> = new Map();
-  private watchPriceHistory: Map<string, WatchPriceHistory> = new Map();
 
   constructor() {
     // Initialize with some default system settings
@@ -973,177 +943,6 @@ export class MemStorage implements IStorage {
     };
     this.codeAnalysisReports.set(newReport.id, newReport);
     return newReport;
-  }
-
-  // Watch collection operations
-  async getWatch(id: string): Promise<WatchCollection | undefined> {
-    return this.watchCollection.get(id);
-  }
-
-  async getWatchByModelCode(modelCode: string): Promise<WatchCollection | undefined> {
-    return Array.from(this.watchCollection.values()).find(watch => watch.modelCode === modelCode);
-  }
-
-  async getAllWatches(): Promise<WatchCollection[]> {
-    return Array.from(this.watchCollection.values());
-  }
-
-  async getWatchesByCollection(collection: string): Promise<WatchCollection[]> {
-    return Array.from(this.watchCollection.values())
-      .filter(watch => watch.collection === collection);
-  }
-
-  async getWatchesByCategory(category: string): Promise<WatchCollection[]> {
-    return Array.from(this.watchCollection.values())
-      .filter(watch => watch.category === category);
-  }
-
-  async getAvailableWatches(): Promise<WatchCollection[]> {
-    return Array.from(this.watchCollection.values())
-      .filter(watch => watch.available);
-  }
-
-  async createWatch(watch: InsertWatchCollection): Promise<WatchCollection> {
-    const newWatch: WatchCollection = {
-      id: randomUUID(),
-      ...watch,
-      currency: watch.currency || "AED",
-      available: watch.available ?? false,
-      statusFlag1: watch.statusFlag1 ?? false,
-      statusFlag2: watch.statusFlag2 ?? false,
-      gender: watch.gender || "unisex",
-      complications: watch.complications || [],
-      tags: watch.tags || [],
-      discontinued: watch.discontinued ?? false,
-      priority: watch.priority || "medium",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.watchCollection.set(newWatch.id, newWatch);
-    return newWatch;
-  }
-
-  async updateWatch(id: string, updates: Partial<WatchCollection>): Promise<WatchCollection> {
-    const watch = this.watchCollection.get(id);
-    if (!watch) {
-      throw new Error("Watch not found");
-    }
-
-    const updatedWatch = {
-      ...watch,
-      ...updates,
-      updatedAt: new Date()
-    };
-
-    this.watchCollection.set(id, updatedWatch);
-    return updatedWatch;
-  }
-
-  async deleteWatch(id: string): Promise<boolean> {
-    return this.watchCollection.delete(id);
-  }
-
-  async bulkUpdateWatchPrices(updates: {id: string, priceNumeric: number}[]): Promise<WatchCollection[]> {
-    const updatedWatches: WatchCollection[] = [];
-    
-    for (const update of updates) {
-      const watch = this.watchCollection.get(update.id);
-      if (watch) {
-        // Create price history entry
-        const priceHistoryEntry: WatchPriceHistory = {
-          id: randomUUID(),
-          watchId: watch.id,
-          oldPrice: watch.priceNumeric || 0,
-          newPrice: update.priceNumeric,
-          priceChange: update.priceNumeric - (watch.priceNumeric || 0),
-          changePercentage: watch.priceNumeric ? ((update.priceNumeric - watch.priceNumeric) / watch.priceNumeric) * 100 : 0,
-          reason: "bulk_update",
-          updatedBy: null,
-          createdAt: new Date()
-        };
-        this.watchPriceHistory.set(priceHistoryEntry.id, priceHistoryEntry);
-
-        // Update watch price
-        const updatedWatch = {
-          ...watch,
-          priceNumeric: update.priceNumeric,
-          price: `${update.priceNumeric.toLocaleString()} AED`,
-          lastPriceUpdate: new Date(),
-          updatedAt: new Date()
-        };
-        this.watchCollection.set(watch.id, updatedWatch);
-        updatedWatches.push(updatedWatch);
-      }
-    }
-
-    return updatedWatches;
-  }
-
-  // Client watch preference operations
-  async getClientWatchPreference(id: string): Promise<ClientWatchPreference | undefined> {
-    return this.clientWatchPreferences.get(id);
-  }
-
-  async getClientWatchPreferences(clientId: string): Promise<ClientWatchPreference[]> {
-    return Array.from(this.clientWatchPreferences.values())
-      .filter(preference => preference.clientId === clientId);
-  }
-
-  async getWatchClientPreferences(watchId: string): Promise<ClientWatchPreference[]> {
-    return Array.from(this.clientWatchPreferences.values())
-      .filter(preference => preference.watchId === watchId);
-  }
-
-  async createClientWatchPreference(preference: InsertClientWatchPreference): Promise<ClientWatchPreference> {
-    const newPreference: ClientWatchPreference = {
-      id: randomUUID(),
-      ...preference,
-      interestLevel: preference.interestLevel || "interested",
-      priceDiscussed: preference.priceDiscussed ?? false,
-      priority: preference.priority || "medium",
-      status: preference.status || "active",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.clientWatchPreferences.set(newPreference.id, newPreference);
-    return newPreference;
-  }
-
-  async updateClientWatchPreference(id: string, updates: Partial<ClientWatchPreference>): Promise<ClientWatchPreference> {
-    const preference = this.clientWatchPreferences.get(id);
-    if (!preference) {
-      throw new Error("Client watch preference not found");
-    }
-
-    const updatedPreference = {
-      ...preference,
-      ...updates,
-      updatedAt: new Date()
-    };
-
-    this.clientWatchPreferences.set(id, updatedPreference);
-    return updatedPreference;
-  }
-
-  async deleteClientWatchPreference(id: string): Promise<boolean> {
-    return this.clientWatchPreferences.delete(id);
-  }
-
-  // Watch price history operations
-  async getWatchPriceHistory(watchId: string): Promise<WatchPriceHistory[]> {
-    return Array.from(this.watchPriceHistory.values())
-      .filter(entry => entry.watchId === watchId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  async createWatchPriceHistoryEntry(entry: InsertWatchPriceHistory): Promise<WatchPriceHistory> {
-    const newEntry: WatchPriceHistory = {
-      id: randomUUID(),
-      ...entry,
-      createdAt: new Date()
-    };
-    this.watchPriceHistory.set(newEntry.id, newEntry);
-    return newEntry;
   }
 }
 

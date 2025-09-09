@@ -14,7 +14,6 @@ import Documents from "@/pages/documents";
 import TripPlanner from "@/pages/trip-planner";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
-import WatchCatalog from "@/pages/watch-catalog";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,7 +31,6 @@ function Router() {
       <Route path="/trip-planner" component={TripPlanner} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />
-      <Route path="/watch-catalog" component={WatchCatalog} />
       <Route component={NotFound} />
     </Switch>
   );
