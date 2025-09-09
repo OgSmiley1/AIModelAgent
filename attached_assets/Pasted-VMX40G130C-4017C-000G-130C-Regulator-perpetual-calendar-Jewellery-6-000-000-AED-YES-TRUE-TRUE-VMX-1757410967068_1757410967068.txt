@@ -1,0 +1,332 @@
+VMX40G130C	4017C/000G-130C	Regulator perpetual calendar - Jewellery	6,000,000 AED	YES	TRUE	TRUE
+VMX24G160C	2400C/000G-160C	Miniature - Ode to Izanagi	6,000,000 AED	No		FALSE
+VMX98R202C	9890C/000R-202C	Armillary tourbillon - Ode to Chronos	6,000,000 AED	No		FALSE
+VMX97R212C	9720C/000R-212C	Celestia astronomical grand complication	6,000,000 AED	No		FALSE
+			6,000,000 AED	No		FALSE
+VMX80R246C	80172/000R-246C	Minute repeater perpetual calendar - Ornamental	NA	No		FALSE
+VMX82PH063	82035/000P-H063	Historiques American 1921 - Arabic	192,000 AED	No		FALSE
+			192,000 AED	No		FALSE
+VMX42AB934	4200H/222A-B934	Historiques 222	121,000 AED	No		FALSE
+			121,000 AED	No		FALSE
+VMX60GH067	6057T/000G-H067	Traditionnelle tourbillon high jewellery	2,720,000 AED	No		FALSE
+			2,720,000 AED	No		FALSE
+VMX85JH069	85180/000J-H069	Patrimony self-winding	134,000 AED	No		FALSE
+			134,000 AED	No		FALSE
+VMX46RH101	4600E/000R-H101	Fiftysix self-winding	96,500 AED	YES	TRUE	TRUE
+			96,500 AED	No		FALSE
+VMX24RH024	2400A/000R-H024	Métiers d’Art Tribute to traditional symbols - Eternal flow	560,000 AED	No		FALSE
+VMX24RH022	2405A/000R-H022	Métiers d’Art Tribute to traditional symbols - Moonlight slivers	560,000 AED	No		FALSE
+VMX24GH023	2400A/000G-H023	Métiers d’Art Tribute to traditional symbols - Eternal flow	560,000 AED	No		FALSE
+VMX24GH021	2405A/000G-H021	Métiers d’Art Tribute to traditional symbols - Moonlight slivers	560,000 AED	No		FALSE
+VMX86RH034	86073/000R-H034	Métiers d'Art The legend of the Chinese zodiac - year of the snake	560,000 AED	No		FALSE
+VMX86PH033	86073/000P-H033	Métiers d'Art The legend of the Chinese zodiac - year of the snake	620,000 AED	No		FALSE
+VMX43RC642	4300V/220R-B642	Overseas perpetual calendar ultra-thin skeleton	605,000 AED	No		FALSE
+VMX43RC547	4300V/220R-B547	Overseas perpetual calendar ultra-thin skeleton	605,000 AED	No		FALSE
+VMX43RC509	4300V/220R-B509	Overseas perpetual calendar ultra-thin	442,000 AED	No		FALSE
+VMX43RC064	4300V/220R-B064	Overseas perpetual calendar ultra-thin	442,000 AED	YES	TRUE	TRUE
+VMX43GC946	4300V/220G-B946	Overseas perpetual calendar ultra-thin skeleton	605,000 AED	YES	TRUE	TRUE
+VMX43GC945	4300V/220G-B945	Overseas perpetual calendar ultra-thin	442,000 AED	YES	TRUE	TRUE
+VMX60GC955	6007V/210G-B955	Overseas tourbillon high jewellery	1,020,000 AED	YES	TRUE	TRUE
+VMX60TH032	6000V/210T-H032	Overseas tourbillon	580,000 AED	No		FALSE
+VMX79RC965	7920V/210R-B965	Overseas dual time Green	286,000 AED	YES	TRUE	TRUE
+VMX55RC966	5520V/210R-B966	Overseas chronograph Pink Gold	299,000 AED	No		FALSE
+VMX46RC969	4605V/200R-B969	Overseas self-winding Green Diamonds - Pink Gold	220,000 AED	No		FALSE
+VMX45RC967	4520V/210R-B967	Overseas self-winding Green	229,000 AED	YES	TRUE	TRUE
+VMX46RH134	4600V/200R-H134	Overseas self-winding	196,000 AED	No		FALSE
+VMX40GH070	4010U/000G-H070	Patrimony moon phase retrograde date	187,000 AED	No		FALSE
+VMX12GH094	1208J/118G-H094	Grand Lady Kalla	5,350,000 AED	No		FALSE
+VMX82RH008	82172/000R-H008	Traditionnelle manual-winding	89,500 AED	No		FALSE
+VMX40R143C	4017C/000R-143C	Regulator perpetual calendar - Jewellery	NA	No		FALSE
+VMX40G146C	4017C/000G-146C	Regulator perpetual calendar - Jewellery	NA	No		FALSE
+VMX97G134C	9720C/000G-134C	Celestia Astronomical Grand Complication (Set for Riyadh)	6,000,000 AED	No		FALSE
+VMX66G132C	6620C/000G-132C	Astronomical striking grand complication	8,550,000 AED	No		FALSE
+VMX75RB994	7500U/000R-B994	Métiers d'Art Tribute to Explorer Naturalists - Cap de Bonne-Espérance	675,000 AED	No		FALSE
+VMX75GB991	7500U/000G-B991	Métiers d'Art Tribute to Explorer Naturalists - Cap-Vert	675,000 AED	No		FALSE
+VMX41GB909	4116U/000G-B909	Patrimony self-winding jewellery	310,000 AED	No		FALSE
+VMX12RC592	1225V/000R-B592	Overseas quartz	125,000 AED	YES	TRUE	TRUE
+VMX12AC590	1225V/200A-B590	Overseas quartz	62,500 AED	No		FALSE
+VMX46RC979	4600V/200R-B979	Overseas self-winding Blue 34.5 mm 	196,000 AED	YES	TRUE	TRUE
+VMX46RC978	4605V/200R-B978	Overseas self-winding Blue 35 mm 	220,000 AED	YES	TRUE	TRUE
+VMX46RC968	4605V/200R-B968	Overseas self-winding Pink Gold 	220,000 AED	No		FALSE
+VMX46AC980	4600V/200A-B980	Overseas self-winding	87,500 AED	No		FALSE
+VMX46AC971	4605V/200A-B971	Overseas self-winding	116,000 AED	No		FALSE
+VMX45RC705	4520V/210R-B705	Overseas self-winding	229,000 AED	No		FALSE
+VMX45AC483	4520V/210A-B483	Overseas self-winding	94,500 AED	No		FALSE
+VMX45AC128	4520V/210A-B128	Overseas self-winding	94,500 AED	No		FALSE
+VMX45AC126	4520V/210A-B126	Overseas self-winding	94,500 AED	No		FALSE
+VMX79RC336	7920V/000R-B336	Overseas dual time	184,000 AED	No		FALSE
+VMX79AC546	7920V/210A-B546	Overseas dual time Black	117,000 AED	No		FALSE
+VMX79AC334	7920V/210A-B334	Overseas dual time Blue	117,000 AED	No		FALSE
+VMX79AC333	7920V/210A-B333	Overseas dual time Silver	117,000 AED	No		FALSE
+VMX60TC935	6000V/210T-B935	Overseas tourbillon skeleton - Titanium 42.5 mm	735,000 AED	No		FALSE
+VMX60RC934	6000V/210R-B934	Overseas tourbillon skeleton	840,000 AED	YES	TRUE	TRUE
+VMX60RC733	6000V/210R-B733	Overseas tourbillon	680,000 AED	No		FALSE
+VMX55RC952	5520V/210R-B952	Overseas chronograph	299,000 AED	No		FALSE
+VMX55AC686	5520V/210A-B686	Overseas chronograph	135,000 AED	YES	TRUE	TRUE
+VMX55AC481	5520V/210A-B481	Overseas chronograph	135,000 AED	YES	TRUE	TRUE
+VMX55AC148	5520V/210A-B148	Overseas chronograph	135,000 AED	YES	TRUE	TRUE
+VMX86RB983	86073/000R-B983	Métiers d'Art The legend of the Chinese zodiac - year of the dragon	448,000 AED	No		FALSE
+VMX86PB982	86073/000P-B982	Métiers d'Art The legend of the Chinese zodiac - year of the dragon	545,000 AED	No		FALSE
+VMX40PH003	4000U/000P-H003	Patrimony retrograde day-date	234,000 AED	YES	TRUE	TRUE
+VMX98G078C	9827C/000G-078C	Armillary tourbillon perpetual calendar - Planetaria Jewellery	NA	No		FALSE
+VMX89G095C	89667/000G-095C	14-day Openworked tourbillon - High Jewellery	NA	No		FALSE
+VMX97G015C	9727C/000G-015C	Celestia Astronomical Grand Complication - High Jewellery	NA	No		FALSE
+VMX66R127C	6605C/000R-127C	Minute repeater Grand feu enamel - Jewellery	NA	No		FALSE
+VMX97P126C	9720C/000P-126C	Celestia Astronomical Grand Complication (set for Dubai)	6,500,000 AED	YES	TRUE	TRUE
+VMX55A3161	5500V/110A-B686	Overseas chronograph	135,000 AED	No		FALSE
+VMX40AC911	4000V/210A-B911	Overseas moon phase retrograde date	166,000 AED	No		FALSE
+VMX43RB947	4305T/000R-B947	Traditionnelle perpetual calendar ultra-thin	336,000 AED	No		FALSE
+VMX14R3071	1405T/000R-B636	Traditionnelle manual-winding	112,000 AED	No		FALSE
+VMX70GB913	7006T/000G-B913	Traditionnelle moon phase	310,000 AED	No		FALSE
+VMX60RB961	6040T/000R-B961	Traditionnelle tourbillon	755,000 AED	No		FALSE
+VMX60RB960	6040T/000R-B960	Traditionnelle tourbillon	755,000 AED	No		FALSE
+VMX60RB959	6040T/000R-B959	Traditionnelle tourbillon	755,000 AED	No		FALSE
+VMX60R3061	6010T/000R-B638	Traditionnelle tourbillon retrograde date openface	650,000 AED	No		FALSE
+VMX60PH025	6000T/000P-H025	Traditionnelle tourbillon	650,000 AED	No		FALSE
+VMX12RB984	1205F/000R-B984	Égérie quartz	81,000 AED	No		FALSE
+VMX80GB942	8006F/000G-B942	Égérie Creative Edition	428,000 AED	No		FALSE
+VMX80RB958	8005F/000R-B958	Égérie moon phase	149,000 AED	No		FALSE
+VMX46RB957	4605F/000R-B957	Égérie self-winding	129,000 AED	No		FALSE
+VMX80RB977	8016F/127R-B977	Égérie moon phase jewellery	785,000 AED	No		FALSE
+VMX80RB976	8006F/000R-B976	Égérie moon phase	310,000 AED	No		FALSE
+VMX80RH002	8005F/120R-H002	Égérie moon phase	215,000 AED	No		FALSE
+VMX55RB952	5500V/110R-B952	Overseas chronograph	299,000 AED	No		FALSE
+VMX76RB927	7620A/000R-B927	Métiers d'Art Tribute to great civilisations - Grand sphinx de Tanis	NA	No		FALSE
+VMX76RB926	7620A/000R-B926	Métiers d'Art Tribute to great civilisations - Lion de Darius	NA	No		FALSE
+VMX76GB929	7620A/000G-B929	Métiers d'Art Tribute to great civilisations - Buste d'Auguste	NA	No		FALSE
+VMX76GB928	7620A/000G-B928	Métiers d'Art Tribute to great civilisations - Victoire de Samothrace	NA	No		FALSE
+VMX86RB933	86073/000R-B933	Métiers d'Art The legend of the Chinese zodiac - year of the rabbit	448,000 AED	No		FALSE
+VMX86PB932	86073/000P-B932	Métiers d'Art The legend of the Chinese zodiac - year of the rabbit	545,000 AED	No		FALSE
+VMX41RB907	4115U/000R-B907	Patrimony self-winding	138,000 AED	No		FALSE
+VMX41GB908	4115U/000G-B908	Patrimony self-winding	138,000 AED	No		FALSE
+VMX42JB935	4200H/222J-B935	Historiques 222	279,000 AED	YES	TRUE	TRUE
+VMX98R079C	9820C/000R-079C	Armillary tourbillon perpetual calendar - Planetaria	4,380,000 AED	No		FALSE
+VMX79AV546	7900V/110A-B546	Overseas dual time	117,000 AED	No		FALSE
+VMX79AV334	7900V/110A-B334	Overseas dual time	117,000 AED	No		FALSE
+VMX79AV333	7900V/110A-B333	Overseas dual time	117,000 AED	No		FALSE
+VMX60RV733	6000V/110R-B733	Overseas tourbillon	680,000 AED	No		FALSE
+VMX60AV544	6000V/110A-B544	Overseas tourbillon	515,000 AED	YES	TRUE	TRUE
+VMX55RV074	5500V/000R-B074	Overseas chronograph	206,000 AED	No		FALSE
+VMX55AV481	5500V/110A-B481	Overseas chronograph	135,000 AED	No		FALSE
+VMX55AV148	5500V/110A-B148	Overseas chronograph	135,000 AED	No		FALSE
+VMX45RV705	4500V/110R-B705	Overseas self-winding	229,000 AED	No		FALSE
+VMX45RV127	4500V/000R-B127	Overseas self-winding	153,000 AED	No		FALSE
+VMX45AV483	4500V/110A-B483	Overseas self-winding	94,500 AED	No		FALSE
+VMX45AV128	4500V/110A-B128	Overseas self-winding	94,500 AED	No		FALSE
+VMX45AV126	4500V/110A-B126	Overseas self-winding	94,500 AED	No		FALSE
+VMX43RV547	4300V/120R-B547	Overseas perpetual calendar ultra-thin skeleton	605,000 AED	No		FALSE
+VMX43RV064	4300V/120R-B064	Overseas perpetual calendar ultra-thin	442,000 AED	No		FALSE
+VMX43GV946	4300V/120G-B946	Overseas perpetual calendar ultra-thin skeleton	605,000 AED	No		FALSE
+VMX43GV945	4300V/120G-B945	Overseas perpetual calendar ultra-thin	442,000 AED	No		FALSE
+VMX23RV078	2305V/000R-B077	Overseas self-winding	167,000 AED	No		FALSE
+VMX23RV077	2305V/100R-B077	Overseas self-winding	216,000 AED	No		FALSE
+VMX23AV170	2305V/100A-B170	Overseas self-winding	112,000 AED	No		FALSE
+VMX23AV078	2305V/100A-B078	Overseas self-winding	112,000 AED	No		FALSE
+VMX12RV592	1205V/000R-B592	Overseas quartz	125,000 AED	No		FALSE
+VMX12AV591	1205V/100A-B591	Overseas quartz	62,500 AED	No		FALSE
+VMX12AV590	1205V/100A-B590	Overseas quartz	62,500 AED	No		FALSE
+VMX60TB935	6000V/110T-B935	Overseas tourbillon skeleton	735,000 AED	No		FALSE
+VMX60RB934	6000V/110R-B934	Overseas tourbillon skeleton	840,000 AED	No		FALSE
+VMX43R3092	4300V/120R-B642	Overseas perpetual calendar ultra-thin skeleton	605,000 AED	No		FALSE
+VMX41RB905	4110U/000R-B905	Patrimony self-winding	110,000 AED	No		FALSE
+VMX41GB906	4110U/000G-B906	Patrimony self-winding	110,000 AED	No		FALSE
+VMX50PB975	5000T/000P-B975	Traditionnelle perpetual calendar chronograph	680,000 AED	No		FALSE
+VMX43GB948	4305T/000G-B948	Traditionnelle perpetual calendar ultra-thin	336,000 AED	No		FALSE
+VMX66G022C	6657C/000G-022C	Openworked Minute repeater - High Jewellery	NA	No		FALSE
+VMX79RV336	7900V/000R-B336	Overseas dual time	184,000 AED	No		FALSE
+VMX60RB972	6000T/000R-B972	Traditionnelle tourbillon	560,000 AED	No		FALSE
+VMX60PB974	6000T/000P-B974	TRADITIONNELLE TOURBILLON	650,000 AED	No		FALSE
+VMX60PB973	6000T/000P-B973	TRADITIONNELLE TOURBILLON	650,000 AED	No		FALSE
+VMX40G3253	4010T/000G-B740	Traditionnelle complete calendar	172,000 AED	No		FALSE
+VMX40R3089	4020T/000R-B654	Traditionnelle complete calendar openface	199,000 AED	No		FALSE
+VMX40G3090	4020T/000G-B655	Traditionnelle complete calendar openface	199,000 AED	No		FALSE
+VMX86RB901	86073/000R-B901	Métiers d'Art The legend of the Chinese zodiac - Year of the tiger	448,000 AED	No		FALSE
+VMX86PB900	86073/000P-B900	Métiers d'Art The legend of the Chinese zodiac - Year of the tiger	545,000 AED	No		FALSE
+VMX79TB922	7910V/000T-B922	Overseas dual time	123,000 AED	No		FALSE
+VMX60R3240	6000V/110R-B733	Overseas tourbillon	680,000 AED	No		FALSE
+VMX55TB923	5510V/000T-B923	Overseas chronograph	145,000 AED	No		FALSE
+VMX43RV510	4300V/000R-B509	Overseas perpetual calendar ultra-thin	369,000 AED	No		FALSE
+VMX43RV509	4300V/120R-B509	Overseas perpetual calendar ultra-thin	442,000 AED	No		FALSE
+VMX43RV065	4300V/000R-B064	Overseas perpetual calendar ultra-thin	369,000 AED	No		FALSE
+VMX43R2674	4300V/120R-B547	Overseas perpetual calendar ultra-thin skeleton	605,000 AED	No		FALSE
+VMX43GB946	4300V/120G-B946	Overseas perpetual calendar ultra-thin skeleton	605,000 AED	No		FALSE
+VMX43GB945	4300V/120G-B945	Overseas perpetual calendar ultra-thin	442,000 AED	No		FALSE
+VMX46R3109	4605F/110R-B496	Égérie self-winding	173,000 AED	YES	TRUE	TRUE
+VMX46R3098	4606F/000R-B648	Égérie self-winding	249,000 AED	No		FALSE
+VMX46G3099	4606F/000G-B649	Égérie self-winding	249,000 AED	No		FALSE
+VMX82P3300	82035/000P-B748	Historiques American 1921 - Collection Excellence Platine	201,000 AED	No		FALSE
+VMX82G3246	82035/000G-B735	Historiques American 1921	153,000 AED	YES	TRUE	TRUE
+VMX11G3245	1100S/000G-B734	Historiques American 1921	127,000 AED	No		FALSE
+VMX51R2984	5100T/000R-B623	Traditionnelle tourbillon chronograph	890,000 AED	No		FALSE
+VMX89R3095	89000/000R-B645	Traditionnelle tourbillon	1,110,000 AED	No		FALSE
+VMX54P3068	5400T/000P-B637	Traditionnelle split-seconds chronograph ultra-thin - Collection Excellence Platine	1,200,000 AED	No		FALSE
+VMX32P3181	3200T/002P-B578	Traditionnelle Twin Beat perpetual calendar	1,020,000 AED	No		FALSE
+VMX80GB499	8016F/127G-B499	Égérie moon phase jewellery	785,000 AED	No		FALSE
+VMX37G3111	37640/000G-B659	Heures Créatives Heure Romantique	237,000 AED	No		FALSE
+VMX86P3097	86073/000P-B647	Métiers d'Art The legend of the Chinese zodiac - Year of the ox	545,000 AED	No		FALSE
+VMX97R008C	9770C/000R-008C	Dual Moon - Grand Complication	NA	No		FALSE
+VMX86R3096	86073/000R-B646	Métiers d'Art The legend of the Chinese zodiac - Year of the ox	448,000 AED	No		FALSE
+VMX79A2637	7900V/110A-B546	Overseas dual time	117,000 AED	No		FALSE
+VMX45R3228	4500V/110R-B705	Overseas self-winding	229,000 AED	No		FALSE
+VMX43R2769	4300V/120R-B509	Overseas perpetual calendar ultra-thin	442,000 AED	No		FALSE
+VMX60R3069	6035T/000R-B634	Traditionnelle tourbillon	645,000 AED	No		FALSE
+VMX60G3070	6025T/000G-B635	Traditionnelle tourbillon jewellery	890,000 AED	No		FALSE
+VMX85R3093	85515/000R-B644	Patrimony self-winding	151,000 AED	No		FALSE
+VMX40P2636	4010U/000P-B545	Patrimony moon phase retrograde date - Collection Excellence Platine	276,000 AED	No		FALSE
+VMX46R2831	4600E/000R-B576	Fiftysix self-winding	96,500 AED	No		FALSE
+VMX40R2755	4000E/000R-B065	Fiftysix complete calendar	169,000 AED	YES	TRUE	TRUE
+VMX46R2375	4605F/000R-B496	Égérie self-winding	129,000 AED	No		FALSE
+VMX80R2377	8005F/000R-B498	Égérie moon phase	149,000 AED	No		FALSE
+VMX80G3063	8016F/126G-B499	Égérie moon phase jewellery	785,000 AED	No		FALSE
+VMX80G2378	8006F/000G-B499	Égérie moon phase	310,000 AED	No		FALSE
+VMX80A2370	8005F/120A-B497	Égérie moon phase	109,000 AED	No		FALSE
+VMX46A2371	4605F/110A-B495	Egérie self-winding	88,500 AED	No		FALSE
+VMX12R2983	1205F/000R-B622	Égérie quartz	81,000 AED	No		FALSE
+VMX43R2478	4300V/000R-B509	Overseas perpetual calendar ultra-thin	369,000 AED	No		FALSE
+VMX60A2760	6000V/110A-B544	Overseas tourbillon	515,000 AED	YES	TRUE	TRUE
+VMX12R2910	1205V/000R-B592	Overseas quartz	125,000 AED	No		FALSE
+VMX12A3050	1205V/100A-B590	Overseas quartz	62,500 AED	No		FALSE
+VMX12A3049	1205V/100A-B591	Overseas quartz	62,500 AED	No		FALSE
+VMX85R2518	85180/000R-B515	Patrimony self-winding	120,000 AED	No		FALSE
+VMX41R3094	4100U/000R-B643	Patrimony self-winding	102,000 AED	No		FALSE
+VMX87R3170	87172/000R-B690	Traditionnelle self-winding	116,000 AED	No		FALSE
+VMX50A2879	5000H/000A-B582	Historiques Cornes de vache 1955	180,000 AED	No		FALSE
+VMX86R2525	86073/000R-B520	Métiers d'Art The legend of the Chinese zodiac - Year of the rat	448,000 AED	No		FALSE
+VMX86P2526	86073/000P-B521	Métiers d'Art The legend of the Chinese zodiac - Year of the rat	545,000 AED	No		FALSE
+VMX81R2520	81180/000R-B518	Patrimony manual-winding	83,500 AED	No		FALSE
+VMX43R2521	43175/000R-B519	Patrimony perpetual calendar ultra-thin	333,000 AED	No		FALSE
+VMX40R2519	4000U/000R-B516	Patrimony retrograde day-date	187,000 AED	No		FALSE
+VMX46R2019	4600E/000R-B441	Fiftysix self-winding	96,500 AED	No		FALSE
+VMX46A2020	4600E/000A-B442	Fiftysix self-winding	48,000 AED	YES	TRUE	TRUE
+VMX44R2014	4400E/000R-B436	Fiftysix day-date	168,000 AED	YES	TRUE	TRUE
+VMX44A2015	4400E/000A-B437	Fiftysix day-date	104,000 AED	No		FALSE
+VMX40R2016	4000E/000R-B438	Fiftysix complete calendar	169,000 AED	No		FALSE
+VMX40A2017	4000E/000A-B439	Fiftysix complete calendar	104,000 AED	No		FALSE
+VMX46A2753	4600E/110A-B487	Fiftysix self-winding	58,500 AED	No		FALSE
+VMX60R2316	6000E/000R-B488	Fiftysix tourbillon	555,000 AED	No		FALSE
+VMX46A2283	4600E/000A-B487	Fiftysix self-winding	48,000 AED	No		FALSE
+VMX40A2656	4000E/000A-B548	Fiftysix complete calendar	104,000 AED	No		FALSE
+VMX40R1635	4010T/000R-B344	Traditionnelle complete calendar	172,000 AED	No		FALSE
+VMX79R1575	7900V/000R-B336	Overseas dual time	184,000 AED	No		FALSE
+VMX43R2104	4300V/000R-B064	Overseas perpetual calendar ultra-thin	369,000 AED	No		FALSE
+VMX55A2271	5500V/110A-B481	Overseas chronograph	135,000 AED	No		FALSE
+VMX43R2612	4300V/120R-B064	Overseas perpetual calendar ultra-thin	442,000 AED	No		FALSE
+VMX86R1952	86073/000R-B428	Métiers d'Art The legend of the Chinese zodiac - Year of the pig	448,000 AED	No		FALSE
+VMX86P1953	86073/000P-B429	Métiers d'Art The legend of the Chinese zodiac - Year of the pig	545,000 AED	No		FALSE
+VMX45A2273	4500V/110A-B483	Overseas self-winding	94,500 AED	No		FALSE
+VMX41G1967	4100U/001G-B181	Patrimony self-winding	102,000 AED	No		FALSE
+VMX41G1944	4100U/000G-B181	Patrimony self-winding	102,000 AED	No		FALSE
+VMX65R1452	6500T/000R-B324	Traditionnelle minute repeater tourbillon	2,050,000 AED	No		FALSE
+VMX60R1633	6000T/000R-B346	Traditionnelle tourbillon	560,000 AED	YES	TRUE	TRUE
+VMX79A1573	7900V/110A-B334	Overseas dual time	117,000 AED	No		FALSE
+VMX79A1572	7900V/110A-B333	Overseas dual time	117,000 AED	No		FALSE
+VMX11R1956	1100S/000R-B430	Historiques American 1921	127,000 AED	YES	TRUE	TRUE
+VMX31A1948	3110V/000A-B426	Historiques Triple calendrier 1942	91,000 AED	No		FALSE
+VMX31A1947	3110V/000A-B425	Historiques Triple calendrier 1942	91,000 AED	No		FALSE
+VMX65P9252	6500T/000P-B100	Traditionnelle minute repeater tourbillon	2,280,000 AED	No		FALSE
+VMX65P9251	6500T/000P-9949	Traditionnelle minute repeater tourbillon	2,280,000 AED	No		FALSE
+VMX86R1373	86073/000R-B256	Métiers d'Art The legend of the Chinese zodiac - Year of the dog	448,000 AED	No		FALSE
+VMX43R1476	43175/000R-B343	Patrimony perpetual calendar ultra-thin	333,000 AED	No		FALSE
+VMX11P1523	1110U/000P-B306	Patrimony manual-winding - Collection Excellence Platine	158,000 AED	No		FALSE
+VMX43R1731	43075/000R-B404	Traditionnelle self-winding ultra-thin	116,000 AED	No		FALSE
+VMX30P9536	30110/000P-B108	Patrimony minute repeater ultra-thin - Collection Excellence Platine	1,420,000 AED	No		FALSE
+VMX11R9660	1110U/000R-B085	Patrimony manual-winding	92,500 AED	No		FALSE
+VMX11G9661	1110U/000G-B086	Patrimony manual-winding	92,500 AED	No		FALSE
+VMX11P9662	1110U/000P-B087	Patrimony manual-winding	125,000 AED	No		FALSE
+VMX81R9874	81180/CB1R-9159	Patrimony manual-winding	133,000 AED	No		FALSE
+VMX40R9740	4000U/000R-B111	Patrimony retrograde day-date	187,000 AED	No		FALSE
+VMX40R9571	4000U/000R-B110	Patrimony retrograde day-date	187,000 AED	No		FALSE
+VMX40G9572	4000U/000G-B112	Patrimony retrograde day-date	187,000 AED	No		FALSE
+VMX40R1503	4010U/000R-B329	Patrimony moon phase retrograde date	187,000 AED	No		FALSE
+VMX41R1966	4100U/001R-B180	Patrimony self-winding	102,000 AED	No		FALSE
+VMX41R1943	4100U/000R-B180	Patrimony self-winding	102,000 AED	No		FALSE
+VMX40G1504	4010U/000G-B330	Patrimony moon phase retrograde date	187,000 AED	No		FALSE
+VMX82R1729	82172/000R-B402	Traditionnelle manual-winding	89,500 AED	No		FALSE
+VMX50R1509	5000T/000R-B304	Traditionnelle perpetual calendar chronograph	467,000 AED	No		FALSE
+VMX87R1730	87172/000R-B403	Traditionnelle self-winding	115,000 AED	No		FALSE
+VMX85R1732	85290/000R-B405	Traditionnelle day-date	182,000 AED	No		FALSE
+VMX70R9612	7000M/000R-B109	Malte moon phase	153,000 AED	No		FALSE
+VMX30R1230	30130/000R-B289	Malte tourbillon	665,000 AED	No		FALSE
+VMX81R1430	81015/000R-B282	Malte manual-winding	83,000 AED	No		FALSE
+VMX55R9465	5500V/000R-B074	Overseas chronograph	206,000 AED	No		FALSE
+VMX55A9467	5500V/110A-B148	Overseas chronograph	135,000 AED	No		FALSE
+VMX45R9730	4500V/000R-B127	Overseas self-winding	153,000 AED	No		FALSE
+VMX45A9728	4500V/110A-B128	Overseas self-winding	94,500 AED	No		FALSE
+VMX45A9727	4500V/110A-B126	Overseas self-winding	94,500 AED	No		FALSE
+VMX23R9471	2305V/000R-B077	Overseas self-winding	167,000 AED	No		FALSE
+VMX23R9469	2305V/100R-B077	Overseas self-winding	216,000 AED	No		FALSE
+VMX23M9573	2305V/100A-B170	Overseas self-winding	112,000 AED	No		FALSE
+VMX23A9470	2305V/100A-B078	Overseas self-winding	112,000 AED	No		FALSE
+VMX77A9802	7700V/110A-B176	Overseas world time	148,000 AED	No		FALSE
+VMX82P9564	82035/000P-B168	Historiques American 1921	189,000 AED	No		FALSE
+VMX50R8672	5000H/000R-B059	Historiques Cornes de vache 1955	242,000 AED	No		FALSE
+VMX77A9801	7700V/110A-B172	Overseas world time	148,000 AED	No		FALSE
+VMX77A9800	7700V/110A-B129	Overseas world time	148,000 AED	No		FALSE
+VMX25R9488	25558/000R-B156	Traditionnelle quartz	72,500 AED	YES	TRUE	TRUE
+VMX25G9489	25558/000G-B157	Traditionnelle quartz	72,500 AED	No		FALSE
+VMX50P9570	5000T/000P-B048	Traditionnelle perpetual calendar chronograph	680,000 AED	No		FALSE
+VMX50P8673	5000H/000P-B058	Historiques Cornes de vache 1955	287,000 AED	No		FALSE
+VMX86P8565	86073/000P-8972	Métiers d'Art The legend of the Chinese zodiac - 2016, year of the monkey	545,000 AED	No		FALSE
+VMX37G9044	37640/000G-B021	Heures Créatives Heure Romantique	279,000 AED	No		FALSE
+VMX37G9043	37640/000G-B030	Heures Créatives Heure Romantique	237,000 AED	No		FALSE
+VMX37G9487	37660/000G-B028	Heures Créatives Heure Audacieuse	640,000 AED	No		FALSE
+VMX85R8877	85515/000R-9840	Patrimony self-winding	151,000 AED	No		FALSE
+VMX30P8448	30110/000P-9999	Patrimony minute repeater ultra-thin	1,340,000 AED	No		FALSE
+VMX82R7754	82230/000R-9963	Malte manual-winding	106,000 AED	No		FALSE
+VMX82G7753	82230/000G-9962	Malte manual-winding	106,000 AED	No		FALSE
+VMX30P7883	30135/000P-9842	Malte tourbillon skeleton	930,000 AED	No		FALSE
+VMX82G8532	82230/000G-9185	Malte manual-winding	106,000 AED	No		FALSE
+VMX85G8878	85515/000G-9841	Patrimony self-winding	151,000 AED	No		FALSE
+VMX81R6354	81590/000R-9847	Traditionnelle manual-winding	112,000 AED	No		FALSE
+VMX81G6355	81590/000G-9848	Traditionnelle manual-winding	112,000 AED	No		FALSE
+VMX82R6993	82172/000R-9888	Traditionnelle manual-winding	89,500 AED	No		FALSE
+VMX81G7690	81761/QB1G-9862	Traditionnelle manual-winding jewellery	3,920,000 AED	No		FALSE
+VMX82G7889	82761/QC1G-9852	Traditionnelle manual-winding jewellery	4,530,000 AED	No		FALSE
+VMX85R7700	85290/000R-9969	Traditionnelle day-date	182,000 AED	No		FALSE
+VMX83G7341	83570/000G-9916	Traditionnelle moon phase	171,000 AED	No		FALSE
+VMX83R8850	83520/000R-9909	Traditionnelle manual-winding	143,000 AED	No		FALSE
+VMX83R8832	83020/000R-9909	Traditionnelle manual-winding	135,000 AED	No		FALSE
+VMX83R7342	83570/000R-9915	Traditionnelle moon phase	171,000 AED	No		FALSE
+VMX30R6424	30110/000R-9793	Patrimony minute repeater ultra-thin	1,220,000 AED	No		FALSE
+VMX81R8614	81180/000R-9162	Patrimony manual-winding	83,500 AED	No		FALSE
+VMX81R7710	81515/000R-9892	Malte manual-winding	137,000 AED	No		FALSE
+VMX81G7711	81515/000G-9891	Malte manual-winding	137,000 AED	No		FALSE
+VMX81G7596	81510/000G-9895	Malte manual-winding	237,000 AED	No		FALSE
+VMX82R4986	82572/000R-9604	Traditionnelle manual-winding	129,000 AED	No		FALSE
+VMX82G4985	82572/000G-9605	Traditionnelle manual-winding	129,000 AED	No		FALSE
+VMX43R5540	43075/000R-9737	Traditionnelle self-winding ultra-thin	116,000 AED	No		FALSE
+VMX82P6288	82172/000P-9811	Traditionnelle manual-winding	103,000 AED	No		FALSE
+VMX81G6432	81760/000G-9862	Traditionnelle manual-winding jewellery	1,180,000 AED	No		FALSE
+VMX85R6366	85520/000R-9850	Traditionnelle self-winding	133,000 AED	No		FALSE
+VMX30R5618	30130/000R-9754	Malte tourbillon	665,000 AED	No		FALSE
+VMX25G9833	25530/000G-9801	Malte quartz	121,000 AED	No		FALSE
+VMX25G9832	25530/000G-9741	Malte quartz	84,500 AED	No		FALSE
+VMX17G0427	17626/S13G-9479	Métiers d'Art Kalla Haute Couture à Pampilles	2,770,000 AED	No		FALSE
+VMX81J6986	81180/000J-9118	Patrimony manual-winding	83,500 AED	No		FALSE
+VMX81G6987	81180/000G-9117	Patrimony manual-winding	83,500 AED	No		FALSE
+VMX81R7625	81180/000R-9159	Patrimony manual-winding	83,500 AED	No		FALSE
+VMX85J8417	85180/000J-9231	Patrimony self-winding	120,000 AED	No		FALSE
+VMX85G8413	85180/000G-9230	Patrimony self-winding	120,000 AED	No		FALSE
+VMX85R9006	85180/000R-9248	Patrimony self-winding	120,000 AED	YES	TRUE	TRUE
+VMX81R9178	81180/000R-9283	Patrimony manual-winding	83,500 AED	No		FALSE
+VMX81P2723	81180/000P-9539	Patrimony manual-winding	107,000 AED	No		FALSE
+VMX81R4720	81530/000R-9682	Patrimony manual-winding	102,000 AED	No		FALSE
+VMX81G4721	81530/000G-9681	Patrimony manual-winding	102,000 AED	No		FALSE
+VMX43R4740	43175/000R-9687	Patrimony perpetual calendar ultra-thin	333,000 AED	YES	TRUE	TRUE
+VMX82R1316	82035/000R-9359	Historiques American 1921	153,000 AED	YES	TRUE	TRUE
+VMX33R2789	33155/000R-9588	Historiques Ultra-fine 1955	123,000 AED	No		FALSE
+VMX87R9195	87172/000R-9302	Traditionnelle self-winding	115,000 AED	No		FALSE
+VMX87G9194	87172/000G-9301	Traditionnelle self-winding	115,000 AED	No		FALSE
+VMX80R9193	80172/000R-9300	Traditionnelle Grandes Complications	2,770,000 AED	No		FALSE
+VMX82R1777	82172/000R-9382	Traditionnelle manual-winding	89,500 AED	No		FALSE
+VMX87J2691	87172/000J-9512	Traditionnelle self-winding	115,000 AED	No		FALSE
+VMX82G1776	82172/000G-9383	Traditionnelle manual-winding	89,500 AED	No		FALSE
+VMX80P2728	80172/000P-9505	Traditionnelle Grandes Complications	2,920,000 AED	No		FALSE
+VMX17G2089	17625/S12G-9479	Métiers d'Art Kalla Haute Couture à Secret	3,820,000 AED	No		FALSE
+X82PH063	82035/000P-H063	Historiques American 1921 (Arabic Numerals)	 192,000 AED	No		FALSE
+X40PH038	4020T/000P-H038	Traditionnelle complete calendar openface	263,000 AED	YES	TRUE	TRUE
+VMX97P126C	9720C/000P-126C	Celestia Astronomical Grand Complication (set for Dubai)	AED 7,100,000	YES	TRUE	TRUE
+VMX14J161C	1420C/000J-161C	Miniature - Ode to Amaterasu	AED 1,180,000.00	YES	TRUE	TRUE
+VMX60GH067	6057/000G-H067	Traditionnelle tourbillon high jewellery	AED 2,720,000.00	YES	TRUE	TRUE
+VMX98T181C	9870C/000T-181C	Armillary tourbillon	AED 2,630,000.00	YES	TRUE	TRUE
+VMX60GC955	6007V/210G-B955	Overseas tourbillon high jewellery	AED 1,020,000.00	YES	TRUE	TRUE
