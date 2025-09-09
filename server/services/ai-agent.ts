@@ -191,7 +191,7 @@ export class AIAgentService {
       return {
         type: "error",
         summary: "Failed to analyze file",
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date(),
       };
     }
