@@ -103,6 +103,72 @@ export default function WatchCatalogPage() {
     importWatchesMutation.mutate(watchCollectionData);
   };
 
+  // Export watches to Excel format
+  const exportToExcel = () => {
+    const csvContent = generateWatchCSV(filteredWatches);
+    downloadCSV(csvContent, "vacheron-constantin-collection.csv");
+    toast({
+      title: "Export Successful",
+      description: "Watch collection exported to CSV file.",
+    });
+  };
+
+  // Generate CSV content for watches
+  const generateWatchCSV = (watches: WatchCollection[]): string => {
+    const headers = [
+      "Model Code",
+      "Reference Number", 
+      "Description",
+      "Price",
+      "Price Numeric",
+      "Currency",
+      "Available",
+      "Collection",
+      "Category",
+      "Material",
+      "Complications",
+      "Priority",
+      "Status Flag 1",
+      "Status Flag 2"
+    ];
+
+    const rows = watches.map(watch => [
+      watch.modelCode || "",
+      watch.referenceNumber || "",
+      watch.description || "",
+      watch.price || "",
+      watch.priceNumeric?.toString() || "",
+      watch.currency || "AED",
+      watch.available ? "YES" : "NO",
+      watch.collection || "",
+      watch.category || "",
+      watch.material || "",
+      watch.complications?.join(", ") || "",
+      watch.priority || "medium",
+      watch.statusFlag1 ? "TRUE" : "FALSE",
+      watch.statusFlag2 ? "TRUE" : "FALSE"
+    ]);
+
+    return [headers, ...rows]
+      .map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+  };
+
+  // Download CSV file
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-yellow-50">
       {/* Header Section */}
@@ -222,6 +288,7 @@ export default function WatchCatalogPage() {
             </Dialog>
 
             <Button
+              onClick={exportToExcel}
               variant="outline"
               className="border-amber-300 text-amber-700 hover:bg-amber-50"
               data-testid="button-export-excel"
@@ -530,13 +597,87 @@ function BulkPriceUpdateForm({ watches, onSubmit, isLoading }: {
   onSubmit: (updates: {id: string, priceNumeric: number}[]) => void;
   isLoading: boolean;
 }) {
-  // Implementation for bulk price update form would go here
+  const [searchFilter, setSearchFilter] = useState("");
+  const [selectedWatches, setSelectedWatches] = useState<{[key: string]: number}>({});
+  
+  const filteredWatches = watches.filter(watch => 
+    watch.description.toLowerCase().includes(searchFilter.toLowerCase()) ||
+    watch.modelCode.toLowerCase().includes(searchFilter.toLowerCase()) ||
+    watch.referenceNumber.toLowerCase().includes(searchFilter.toLowerCase())
+  );
+  
+  const handlePriceChange = (watchId: string, newPrice: string) => {
+    const numericPrice = parseFloat(newPrice.replace(/[^\d.]/g, ""));
+    if (!isNaN(numericPrice)) {
+      setSelectedWatches(prev => ({
+        ...prev,
+        [watchId]: numericPrice
+      }));
+    }
+  };
+  
+  const handleSubmit = () => {
+    const updates = Object.entries(selectedWatches)
+      .filter(([id, price]) => price > 0)
+      .map(([id, priceNumeric]) => ({ id, priceNumeric }));
+    onSubmit(updates);
+  };
+  
   return (
-    <div className="p-4">
-      <p className="text-amber-700">Bulk price update form implementation coming soon...</p>
-      <Button onClick={() => onSubmit([])} disabled={isLoading} className="mt-4">
-        {isLoading ? "Updating..." : "Update Prices"}
-      </Button>
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="search-watches">Search Watches</Label>
+        <Input
+          id="search-watches"
+          placeholder="Search by model, reference, or description..."
+          value={searchFilter}
+          onChange={(e) => setSearchFilter(e.target.value)}
+          className="border-amber-200"
+        />
+      </div>
+      
+      <div className="max-h-96 overflow-y-auto border border-amber-200 rounded-lg">
+        <div className="grid gap-2 p-4">
+          {filteredWatches.slice(0, 50).map(watch => (
+            <div key={watch.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-900 truncate">
+                  {watch.description}
+                </p>
+                <p className="text-xs text-amber-600">
+                  {watch.modelCode} • Current: {watch.price || `${watch.priceNumeric?.toLocaleString()} AED`}
+                </p>
+              </div>
+              <div className="ml-4 w-32">
+                <Input
+                  type="number"
+                  placeholder="New price"
+                  onChange={(e) => handlePriceChange(watch.id, e.target.value)}
+                  className="text-sm border-amber-200"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        {filteredWatches.length > 50 && (
+          <div className="p-4 text-center text-amber-600">
+            Showing first 50 results. Use search to find specific watches.
+          </div>
+        )}
+      </div>
+      
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-amber-600">
+          {Object.keys(selectedWatches).length} watches selected for price update
+        </p>
+        <Button 
+          onClick={handleSubmit} 
+          disabled={isLoading || Object.keys(selectedWatches).length === 0}
+          className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700"
+        >
+          {isLoading ? "Updating..." : `Update ${Object.keys(selectedWatches).length} Prices`}
+        </Button>
+      </div>
     </div>
   );
 }
