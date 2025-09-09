@@ -387,9 +387,97 @@ export const insertCodeAnalysisReportSchema = createInsertSchema(codeAnalysisRep
   createdAt: true,
 });
 
+// Luxury watch collection table
+export const watchCollection = pgTable("watch_collection", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  modelCode: text("model_code").notNull().unique(), // VMX40G130C
+  referenceNumber: text("reference_number").notNull(), // 4017C/000G-130C
+  description: text("description").notNull(), // Watch name/type
+  price: text("price"), // Original price string (6,000,000 AED, NA)
+  priceNumeric: real("price_numeric"), // Numeric price for calculations
+  currency: text("currency").default("AED"),
+  available: boolean("available").default(false), // YES/No converted to boolean
+  statusFlag1: boolean("status_flag_1").default(false), // TRUE/FALSE from data
+  statusFlag2: boolean("status_flag_2").default(false), // TRUE/FALSE from data
+  collection: text("collection"), // Overseas, Traditionnelle, Patrimony, etc.
+  category: text("category"), // Self-winding, Tourbillon, Chronograph, etc.
+  material: text("material"), // Gold, Platinum, Steel, etc.
+  complications: text("complications").array(), // Array of complications
+  gender: text("gender").default("unisex"), // men, women, unisex
+  caseSize: text("case_size"), // 40mm, 42.5mm, etc.
+  waterResistance: text("water_resistance"), // 30m, 150m, etc.
+  movement: text("movement"), // Automatic, Manual, Quartz
+  powerReserve: text("power_reserve"), // 65 hours, etc.
+  tags: text("tags").array(), // Additional tags for filtering
+  imageUrl: text("image_url"), // Product image URL
+  discontinued: boolean("discontinued").default(false),
+  priority: text("priority").default("medium"), // low, medium, high, exclusive
+  salesNotes: text("sales_notes"), // Internal sales notes
+  lastPriceUpdate: timestamp("last_price_update"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Client watch preferences table
+export const clientWatchPreferences = pgTable("client_watch_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id),
+  watchId: varchar("watch_id").references(() => watchCollection.id),
+  interestLevel: text("interest_level").default("interested"), // interested, very_interested, considering, declined
+  priceDiscussed: boolean("price_discussed").default(false),
+  quotedPrice: real("quoted_price"), // Custom quoted price for this client
+  notes: text("notes"), // Client-specific notes about this watch
+  priority: text("priority").default("medium"), // low, medium, high
+  status: text("status").default("active"), // active, presented, sold, lost
+  lastDiscussed: timestamp("last_discussed"),
+  followUpDate: timestamp("follow_up_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Watch price history for tracking changes
+export const watchPriceHistory = pgTable("watch_price_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  watchId: varchar("watch_id").references(() => watchCollection.id),
+  oldPrice: real("old_price"),
+  newPrice: real("new_price"),
+  priceChange: real("price_change"), // Difference
+  changePercentage: real("change_percentage"),
+  reason: text("reason"), // market_adjustment, bulk_update, manual_correction
+  updatedBy: varchar("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas
+export const insertWatchCollectionSchema = createInsertSchema(watchCollection).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertClientWatchPreferenceSchema = createInsertSchema(clientWatchPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWatchPriceHistorySchema = createInsertSchema(watchPriceHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertWatchCollection = z.infer<typeof insertWatchCollectionSchema>;
+export type WatchCollection = typeof watchCollection.$inferSelect;
+
+export type InsertClientWatchPreference = z.infer<typeof insertClientWatchPreferenceSchema>;
+export type ClientWatchPreference = typeof clientWatchPreferences.$inferSelect;
+
+export type InsertWatchPriceHistory = z.infer<typeof insertWatchPriceHistorySchema>;
+export type WatchPriceHistory = typeof watchPriceHistory.$inferSelect;
 
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;

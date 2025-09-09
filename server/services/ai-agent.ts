@@ -4,7 +4,7 @@ import { GeminiService } from "./gemini-service";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
   attachments?: FileAttachment[];
@@ -13,7 +13,7 @@ export interface ChatMessage {
 export interface FileAttachment {
   id: string;
   filename: string;
-  type: 'document' | 'image' | 'audio' | 'video';
+  type: "document" | "image" | "audio" | "video";
   url: string;
   analysisResults?: any;
 }
@@ -40,36 +40,34 @@ export class AIAgentService {
       clientData?: any[];
       currentClient?: any;
       attachedFiles?: FileAttachment[];
-      aiModel?: 'openai' | 'gemini';
-    } = {}
+      aiModel?: "openai" | "gemini";
+    } = {},
   ): Promise<string> {
     try {
-      const aiModel = context.aiModel || 'openai';
-      
-      if (aiModel === 'gemini') {
+      const aiModel = context.aiModel || "openai";
+
+      if (aiModel === "gemini") {
         // Use Gemini for processing
         return await GeminiService.processMessage(message, context);
       } else {
         // Use OpenAI for processing (default)
         const systemPrompt = this.buildSystemPrompt(context);
-        
+
         // Prepare messages for OpenAI
-        const messages: any[] = [
-          { role: 'system', content: systemPrompt }
-        ];
+        const messages: any[] = [{ role: "system", content: systemPrompt }];
 
         // Add conversation history
         if (context.conversationHistory) {
-          context.conversationHistory.slice(-10).forEach(msg => {
+          context.conversationHistory.slice(-10).forEach((msg) => {
             messages.push({
               role: msg.role,
-              content: msg.content
+              content: msg.content,
             });
           });
         }
 
         // Add current message
-        messages.push({ role: 'user', content: message });
+        messages.push({ role: "user", content: message });
 
         // Process with OpenAI - using gpt-5 as it's the latest model
         const response = await openai.chat.completions.create({
@@ -79,10 +77,13 @@ export class AIAgentService {
           temperature: 0.7,
         });
 
-        return response.choices[0].message.content || "I'm sorry, I couldn't process your request.";
+        return (
+          response.choices[0].message.content ||
+          "I'm sorry, I couldn't process your request."
+        );
       }
     } catch (error) {
-      console.error('AI Agent processing error:', error);
+      console.error("AI Agent processing error:", error);
       return "I encountered an error processing your request. Please try again.";
     }
   }
@@ -92,28 +93,36 @@ export class AIAgentService {
    */
   static async analyzeFile(
     file: FileAttachment,
-    analysisType: 'general' | 'client_document' | 'contract' | 'report' = 'general',
-    aiModel: 'openai' | 'gemini' = 'openai'
+    analysisType:
+      | "general"
+      | "client_document"
+      | "contract"
+      | "report" = "general",
+    aiModel: "openai" | "gemini" = "openai",
   ): Promise<any> {
     try {
-      let analysisPrompt = '';
-      
+      let analysisPrompt = "";
+
       switch (analysisType) {
-        case 'client_document':
-          analysisPrompt = 'Analyze this client document and extract key information including: client preferences, budget indicators, timeline requirements, decision-making factors, potential objections, and opportunities. Provide actionable insights for sales strategy.';
+        case "client_document":
+          analysisPrompt =
+            "Analyze this client document and extract key information including: client preferences, budget indicators, timeline requirements, decision-making factors, potential objections, and opportunities. Provide actionable insights for sales strategy.";
           break;
-        case 'contract':
-          analysisPrompt = 'Analyze this contract document and summarize: key terms, payment schedules, deliverables, timelines, risk factors, and important clauses. Highlight any concerns or opportunities.';
+        case "contract":
+          analysisPrompt =
+            "Analyze this contract document and summarize: key terms, payment schedules, deliverables, timelines, risk factors, and important clauses. Highlight any concerns or opportunities.";
           break;
-        case 'report':
-          analysisPrompt = 'Analyze this report and provide: executive summary, key findings, trends, recommendations, and actionable insights for business decision-making.';
+        case "report":
+          analysisPrompt =
+            "Analyze this report and provide: executive summary, key findings, trends, recommendations, and actionable insights for business decision-making.";
           break;
         default:
-          analysisPrompt = 'Analyze this document and provide a comprehensive summary with key insights, important information, and actionable recommendations.';
+          analysisPrompt =
+            "Analyze this document and provide a comprehensive summary with key insights, important information, and actionable recommendations.";
       }
 
-      if (file.type === 'image') {
-        if (aiModel === 'gemini') {
+      if (file.type === "image") {
+        if (aiModel === "gemini") {
           // Use Gemini for image analysis
           const imageData = file.url; // Assuming base64 data or URL
           return await GeminiService.analyzeImage(imageData, analysisPrompt);
@@ -126,7 +135,7 @@ export class AIAgentService {
                 role: "user",
                 content: [
                   { type: "text", text: analysisPrompt },
-                  { type: "image_url", image_url: { url: file.url } }
+                  { type: "image_url", image_url: { url: file.url } },
                 ],
               },
             ],
@@ -134,49 +143,56 @@ export class AIAgentService {
           });
 
           return {
-            type: 'image_analysis',
+            type: "image_analysis",
             summary: response.choices[0].message.content,
-            insights: this.extractInsights(response.choices[0].message.content || ''),
-            timestamp: new Date()
+            insights: this.extractInsights(
+              response.choices[0].message.content || "",
+            ),
+            timestamp: new Date(),
           };
         }
       } else {
-        if (aiModel === 'gemini') {
+        if (aiModel === "gemini") {
           // Use Gemini for document analysis
           const documentText = `Document: ${file.filename}\n${analysisPrompt}`;
           const summary = await GeminiService.summarizeDocument(documentText);
           return {
-            type: 'document_analysis',
+            type: "document_analysis",
             summary,
-            insights: [summary.substring(0, 100) + '...'],
-            timestamp: new Date()
+            insights: [summary.substring(0, 100) + "..."],
+            timestamp: new Date(),
           };
         } else {
           // Use OpenAI for document analysis
           const response = await openai.chat.completions.create({
             model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
             messages: [
-              { role: 'system', content: analysisPrompt },
-              { role: 'user', content: `Please analyze this document: ${file.filename}` }
+              { role: "system", content: analysisPrompt },
+              {
+                role: "user",
+                content: `Please analyze this document: ${file.filename}`,
+              },
             ],
             max_tokens: 800,
           });
 
           return {
-            type: 'document_analysis',
+            type: "document_analysis",
             summary: response.choices[0].message.content,
-            insights: this.extractInsights(response.choices[0].message.content || ''),
-            timestamp: new Date()
+            insights: this.extractInsights(
+              response.choices[0].message.content || "",
+            ),
+            timestamp: new Date(),
           };
         }
       }
     } catch (error) {
-      console.error('File analysis error:', error);
+      console.error("File analysis error:", error);
       return {
-        type: 'error',
-        summary: 'Failed to analyze file',
+        type: "error",
+        summary: "Failed to analyze file",
         error: error.message,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -189,12 +205,17 @@ export class AIAgentService {
     interactions: any[] = [],
     messages: any[] = [],
     deals: any[] = [],
-    aiModel: 'openai' | 'gemini' = 'openai'
+    aiModel: "openai" | "gemini" = "openai",
   ): Promise<ClientAnalysisResult> {
     try {
-      if (aiModel === 'gemini') {
+      if (aiModel === "gemini") {
         // Use Gemini for client analysis
-        return await GeminiService.analyzeClient(client, interactions, messages, deals);
+        return await GeminiService.analyzeClient(
+          client,
+          interactions,
+          messages,
+          deals,
+        );
       } else {
         // Use OpenAI for client analysis
         const analysisPrompt = `
@@ -203,7 +224,11 @@ export class AIAgentService {
           Client Profile: ${JSON.stringify(client, null, 2)}
           Recent Interactions: ${JSON.stringify(interactions.slice(-3), null, 2)}
           Recent Messages: ${JSON.stringify(messages.slice(-5), null, 2)}
-          Active Deals: ${JSON.stringify(deals.filter((d: any) => d.stage !== 'closed'), null, 2)}
+          Active Deals: ${JSON.stringify(
+            deals.filter((d: any) => d.stage !== "closed"),
+            null,
+            2,
+          )}
           
           Provide analysis in JSON format:
           {
@@ -219,15 +244,21 @@ export class AIAgentService {
         const response = await openai.chat.completions.create({
           model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
           messages: [
-            { role: 'system', content: 'You are an expert sales analyst. Analyze client data and provide strategic insights in JSON format.' },
-            { role: 'user', content: analysisPrompt }
+            {
+              role: "system",
+              content:
+                "You are an expert sales analyst. Analyze client data and provide strategic insights in JSON format.",
+            },
+            { role: "user", content: analysisPrompt },
           ],
           response_format: { type: "json_object" },
           max_tokens: 1000,
         });
 
-        const analysis = JSON.parse(response.choices[0].message.content || '{}');
-        
+        const analysis = JSON.parse(
+          response.choices[0].message.content || "{}",
+        );
+
         return {
           clientId: client.id,
           insights: analysis.insights || [],
@@ -235,19 +266,19 @@ export class AIAgentService {
           nextActions: analysis.nextActions || [],
           riskFactors: analysis.riskFactors || [],
           opportunities: analysis.opportunities || [],
-          confidenceScore: analysis.confidenceScore || 0.5
+          confidenceScore: analysis.confidenceScore || 0.5,
         };
       }
     } catch (error) {
-      console.error('Client analysis error:', error);
+      console.error("Client analysis error:", error);
       return {
         clientId: client.id,
-        insights: ['Analysis failed due to technical error'],
-        recommendations: ['Retry analysis later'],
-        nextActions: ['Contact technical support'],
-        riskFactors: ['Analysis incomplete'],
+        insights: ["Analysis failed due to technical error"],
+        recommendations: ["Retry analysis later"],
+        nextActions: ["Contact technical support"],
+        riskFactors: ["Analysis incomplete"],
         opportunities: [],
-        confidenceScore: 0
+        confidenceScore: 0,
       };
     }
   }
@@ -260,7 +291,7 @@ export class AIAgentService {
     context: {
       currentClient?: any;
       recentActivity?: any[];
-    } = {}
+    } = {},
   ): Promise<string> {
     try {
       const voicePrompt = `
@@ -269,7 +300,7 @@ export class AIAgentService {
         
         User said: "${audioText}"
         
-        ${context.currentClient ? `Current client context: ${context.currentClient.name} (${context.currentClient.status})` : ''}
+        ${context.currentClient ? `Current client context: ${context.currentClient.name} (${context.currentClient.status})` : ""}
         
         Provide a helpful, actionable response.
       `;
@@ -277,16 +308,23 @@ export class AIAgentService {
       const response = await openai.chat.completions.create({
         model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [
-          { role: 'system', content: 'You are a helpful sales assistant. Respond conversationally to voice input.' },
-          { role: 'user', content: voicePrompt }
+          {
+            role: "system",
+            content:
+              "You are a helpful sales assistant. Respond conversationally to voice input.",
+          },
+          { role: "user", content: voicePrompt },
         ],
         max_tokens: 300,
         temperature: 0.8,
       });
 
-      return response.choices[0].message.content || "I understand. How can I help you further?";
+      return (
+        response.choices[0].message.content ||
+        "I understand. How can I help you further?"
+      );
     } catch (error) {
-      console.error('Voice processing error:', error);
+      console.error("Voice processing error:", error);
       return "I didn't catch that. Could you please try again?";
     }
   }
@@ -297,10 +335,10 @@ export class AIAgentService {
   static async generateOutreachMessage(
     client: any,
     context: {
-      purpose: 'follow_up' | 'proposal' | 'check_in' | 'closing' | 'nurturing';
+      purpose: "follow_up" | "proposal" | "check_in" | "closing" | "nurturing";
       recentActivity?: string;
       dealInfo?: any;
-    }
+    },
   ): Promise<string> {
     try {
       const outreachPrompt = `
@@ -308,10 +346,10 @@ export class AIAgentService {
         
         Client: ${client.name} (${client.status})
         Lead Score: ${client.leadScore || 0}
-        Interests: ${client.interests || 'Not specified'}
-        Last Interaction: ${client.lastInteraction ? new Date(client.lastInteraction).toDateString() : 'Never'}
+        Interests: ${client.interests || "Not specified"}
+        Last Interaction: ${client.lastInteraction ? new Date(client.lastInteraction).toDateString() : "Never"}
         Purpose: ${context.purpose}
-        Recent Activity: ${context.recentActivity || 'None'}
+        Recent Activity: ${context.recentActivity || "None"}
         
         Generate a professional, personalized message that:
         1. Addresses the client by name
@@ -326,16 +364,23 @@ export class AIAgentService {
       const response = await openai.chat.completions.create({
         model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
         messages: [
-          { role: 'system', content: 'You are an expert sales communication specialist. Generate personalized, effective outreach messages.' },
-          { role: 'user', content: outreachPrompt }
+          {
+            role: "system",
+            content:
+              "You are an expert sales communication specialist. Generate personalized, effective outreach messages.",
+          },
+          { role: "user", content: outreachPrompt },
         ],
         max_tokens: 200,
         temperature: 0.7,
       });
 
-      return response.choices[0].message.content || `Hi ${client.name}, I wanted to follow up with you. How can I assist you today?`;
+      return (
+        response.choices[0].message.content ||
+        `Hi ${client.name}, I wanted to follow up with you. How can I assist you today?`
+      );
     } catch (error) {
-      console.error('Outreach generation error:', error);
+      console.error("Outreach generation error:", error);
       return `Hi ${client.name}, I hope you're doing well. I wanted to reach out and see how I can help you achieve your goals.`;
     }
   }
@@ -381,14 +426,18 @@ Be helpful, professional, and provide actionable insights. When analyzing client
    */
   private static extractInsights(content: string): string[] {
     const insights: string[] = [];
-    
+
     // Simple extraction of bullet points and key phrases
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     for (const line of lines) {
       const trimmed = line.trim();
-      if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+      if (
+        trimmed.startsWith("•") ||
+        trimmed.startsWith("-") ||
+        trimmed.startsWith("*")
+      ) {
         insights.push(trimmed.substring(1).trim());
-      } else if (trimmed.length > 20 && trimmed.includes(':')) {
+      } else if (trimmed.length > 20 && trimmed.includes(":")) {
         insights.push(trimmed);
       }
     }
