@@ -13,6 +13,27 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Watch Collection table for luxury watch catalog
+export const watchCollection = pgTable("watch_collection", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reference: text("reference").notNull().unique(), // Watch reference number
+  collectionName: text("collection_name"), // Collection series name
+  brand: text("brand").default("Vacheron Constantin"),
+  model: text("model"),
+  description: text("description"),
+  price: real("price").default(0),
+  currency: text("currency").default("USD"),
+  available: boolean("available").default(false),
+  stock: text("stock"),
+  category: text("category").default("Luxury Watch"),
+  specifications: jsonb("specifications"), // Technical specs, materials, etc.
+  images: text("images").array(), // Array of image URLs
+  tags: text("tags").array(), // Searchable tags
+  popularity: integer("popularity").default(0), // Number of client interests
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Clients table for managing business contacts
 export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
