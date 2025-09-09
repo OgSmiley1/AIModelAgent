@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Test Maaz SHARIF Client",
+    "phone": "+971-50-123-4567",
+    "email": "test.maaz.client@email.com",
+    "whatsappNumber": "+971-50-123-4567",
+    "status": "prospect",
+    "priority": "high",
+    "interests": "Luxury Watches - Test Reference",
+    "notes": "Test Maaz SHARIF client from data extraction",
+    "budget": 250000,
+    "timeframe": "short_term",
+    "location": "Middle East",
+    "decisionMaker": true,
+    "leadScore": 85,
+    "conversionProbability": 0.85,
+    "engagementLevel": "high",
+    "followUpRequired": true,
+    "tags": [
+      "maaz-sharif",
+      "luxury-watches",
+      "test-import"
+    ],
+    "source": "maaz_sharif_export",
+    "salesAssociate": "SHARIF Maaz"
+  }
+]

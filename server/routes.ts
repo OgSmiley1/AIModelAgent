@@ -143,6 +143,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generic Clients Import Route (for Maaz SHARIF data)
+  app.post("/api/clients/import", async (req, res) => {
+    try {
+      console.log("🎯 Starting client import...");
+      
+      const clientsData = req.body;
+      if (!Array.isArray(clientsData)) {
+        return res.status(400).json({ error: "Expected array of clients" });
+      }
+      
+      console.log(`📊 Importing ${clientsData.length} client records`);
+      
+      let importedCount = 0;
+      let errorCount = 0;
+      
+      for (const clientData of clientsData) {
+        try {
+          // Create client using the provided data structure
+          const clientId = await storage.createClient({
+            name: clientData.name || 'Unknown Client',
+            phone: clientData.phone || null,
+            email: clientData.email || null,
+            whatsappNumber: clientData.whatsappNumber || clientData.phone || null,
+            status: clientData.status || 'prospect',
+            priority: clientData.priority || 'medium',
+            interests: clientData.interests || '',
+            notes: clientData.notes || '',
+            budget: clientData.budget || 0,
+            timeframe: clientData.timeframe || 'medium_term',
+            location: clientData.location || '',
+            decisionMaker: clientData.decisionMaker || false,
+            leadScore: clientData.leadScore || 0,
+            conversionProbability: clientData.conversionProbability || 0,
+            engagementLevel: clientData.engagementLevel || 'medium',
+            followUpRequired: clientData.followUpRequired || false,
+            followUpDate: clientData.followUpDate || null,
+            tags: clientData.tags || [],
+            source: clientData.source || 'import',
+            originalData: {
+              salesAssociate: clientData.salesAssociate,
+              originalReference: clientData.originalReference,
+              requestDate: clientData.requestDate
+            }
+          });
+
+          // If followUpRequired, create a follow-up record
+          if (clientData.followUpRequired && clientData.followUpDate) {
+            await storage.createFollowUp({
+              clientId: clientId,
+              type: "reminder",
+              title: `Follow-up for ${clientData.name}`,
+              description: `Scheduled follow-up based on import data`,
+              scheduledFor: new Date(clientData.followUpDate),
+              priority: clientData.priority === 'vip' ? 'high' : 'medium'
+            });
+          }
+
+          importedCount++;
+          
+          if (importedCount % 10 === 0) {
+            console.log(`📈 Imported ${importedCount}/${clientsData.length} clients...`);
+          }
+        } catch (error) {
+          console.error(`❌ Error importing client:`, error);
+          errorCount++;
+        }
+      }
+      
+      console.log(`✅ Import completed: ${importedCount} imported, ${errorCount} errors`);
+      
+      res.json({
+        success: true,
+        message: "Clients imported successfully",
+        imported: importedCount,
+        errors: errorCount,
+        total: clientsData.length
+      });
+      
+    } catch (error) {
+      console.error("❌ Import error:", error);
+      res.status(500).json({ error: "Import failed", details: error.message });
+    }
+  });
+
   // Import Maaz Clients Route
   app.post("/api/clients/import-maaz", async (req, res) => {
     try {
