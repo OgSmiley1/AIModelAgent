@@ -15,7 +15,8 @@ import {
   type GithubRepository, type InsertGithubRepository,
   type SelfEditingHistory, type InsertSelfEditingHistory,
   type AiLearningDocument, type InsertAiLearningDocument,
-  type CodeAnalysisReport, type InsertCodeAnalysisReport
+  type CodeAnalysisReport, type InsertCodeAnalysisReport,
+  type Watch, type InsertWatch
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -131,6 +132,19 @@ export interface IStorage {
   getCodeAnalysisReport(id: string): Promise<CodeAnalysisReport | undefined>;
   getCodeAnalysisReportsByRepository(repositoryId: string): Promise<CodeAnalysisReport[]>;
   createCodeAnalysisReport(report: InsertCodeAnalysisReport): Promise<CodeAnalysisReport>;
+
+  // Watch collection operations
+  getWatch(id: string): Promise<Watch | undefined>;
+  getWatchByReference(reference: string): Promise<Watch | undefined>;
+  getAllWatches(): Promise<Watch[]>;
+  getAvailableWatches(): Promise<Watch[]>;
+  getWatchesByCollection(collectionName: string): Promise<Watch[]>;
+  getWatchesByPriceRange(minPrice: number, maxPrice: number): Promise<Watch[]>;
+  searchWatches(query: string): Promise<Watch[]>;
+  createWatch(watch: InsertWatch): Promise<Watch>;
+  updateWatch(id: string, updates: Partial<Watch>): Promise<Watch>;
+  deleteWatch(id: string): Promise<boolean>;
+  incrementWatchPopularity(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -151,6 +165,7 @@ export class MemStorage implements IStorage {
   private selfEditingHistory: Map<string, SelfEditingHistory> = new Map();
   private aiLearningDocuments: Map<string, AiLearningDocument> = new Map();
   private codeAnalysisReports: Map<string, CodeAnalysisReport> = new Map();
+  private watches: Map<string, Watch> = new Map();
 
   constructor() {
     // Initialize with some default system settings
@@ -943,6 +958,107 @@ export class MemStorage implements IStorage {
     };
     this.codeAnalysisReports.set(newReport.id, newReport);
     return newReport;
+  }
+
+  // Watch collection operations
+  async getWatch(id: string): Promise<Watch | undefined> {
+    return this.watches.get(id);
+  }
+
+  async getWatchByReference(reference: string): Promise<Watch | undefined> {
+    return Array.from(this.watches.values())
+      .find(watch => watch.reference === reference);
+  }
+
+  async getAllWatches(): Promise<Watch[]> {
+    return Array.from(this.watches.values())
+      .sort((a, b) => a.reference.localeCompare(b.reference));
+  }
+
+  async getAvailableWatches(): Promise<Watch[]> {
+    return Array.from(this.watches.values())
+      .filter(watch => watch.available)
+      .sort((a, b) => a.reference.localeCompare(b.reference));
+  }
+
+  async getWatchesByCollection(collectionName: string): Promise<Watch[]> {
+    return Array.from(this.watches.values())
+      .filter(watch => watch.collectionName && 
+               watch.collectionName.toLowerCase().includes(collectionName.toLowerCase()))
+      .sort((a, b) => a.reference.localeCompare(b.reference));
+  }
+
+  async getWatchesByPriceRange(minPrice: number, maxPrice: number): Promise<Watch[]> {
+    return Array.from(this.watches.values())
+      .filter(watch => watch.price >= minPrice && watch.price <= maxPrice)
+      .sort((a, b) => a.price - b.price);
+  }
+
+  async searchWatches(query: string): Promise<Watch[]> {
+    const searchTerm = query.toLowerCase();
+    return Array.from(this.watches.values())
+      .filter(watch => 
+        watch.reference.toLowerCase().includes(searchTerm) ||
+        (watch.collectionName && watch.collectionName.toLowerCase().includes(searchTerm)) ||
+        (watch.model && watch.model.toLowerCase().includes(searchTerm)) ||
+        (watch.description && watch.description.toLowerCase().includes(searchTerm)) ||
+        (watch.tags && watch.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
+      )
+      .sort((a, b) => {
+        // Prioritize reference matches, then collection matches
+        const aRefMatch = a.reference.toLowerCase().includes(searchTerm);
+        const bRefMatch = b.reference.toLowerCase().includes(searchTerm);
+        if (aRefMatch && !bRefMatch) return -1;
+        if (!aRefMatch && bRefMatch) return 1;
+        return a.reference.localeCompare(b.reference);
+      });
+  }
+
+  async createWatch(watch: InsertWatch): Promise<Watch> {
+    const newWatch: Watch = {
+      id: randomUUID(),
+      ...watch,
+      collectionName: watch.collectionName || null,
+      model: watch.model || null,
+      description: watch.description || null,
+      specifications: watch.specifications || null,
+      images: watch.images || [],
+      tags: watch.tags || [],
+      popularity: watch.popularity || 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.watches.set(newWatch.id, newWatch);
+    return newWatch;
+  }
+
+  async updateWatch(id: string, updates: Partial<Watch>): Promise<Watch> {
+    const watch = this.watches.get(id);
+    if (!watch) {
+      throw new Error("Watch not found");
+    }
+
+    const updatedWatch = {
+      ...watch,
+      ...updates,
+      updatedAt: new Date()
+    };
+
+    this.watches.set(id, updatedWatch);
+    return updatedWatch;
+  }
+
+  async deleteWatch(id: string): Promise<boolean> {
+    return this.watches.delete(id);
+  }
+
+  async incrementWatchPopularity(id: string): Promise<void> {
+    const watch = this.watches.get(id);
+    if (watch) {
+      watch.popularity = (watch.popularity || 0) + 1;
+      watch.updatedAt = new Date();
+      this.watches.set(id, watch);
+    }
   }
 }
 

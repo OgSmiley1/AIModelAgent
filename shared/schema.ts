@@ -459,3 +459,13 @@ export type AiLearningDocument = typeof aiLearningDocuments.$inferSelect;
 
 export type InsertCodeAnalysisReport = z.infer<typeof insertCodeAnalysisReportSchema>;
 export type CodeAnalysisReport = typeof codeAnalysisReports.$inferSelect;
+
+// Watch Collection schema
+export const insertWatchSchema = createInsertSchema(watchCollection).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertWatch = z.infer<typeof insertWatchSchema>;
+export type Watch = typeof watchCollection.$inferSelect;
