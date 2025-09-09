@@ -143,6 +143,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Watch Collection API Routes
+  app.get("/api/watches", async (req, res) => {
+    try {
+      const watches = await storage.getAllWatches();
+      res.json(watches);
+    } catch (error) {
+      console.error("❌ Error fetching watches:", error);
+      res.status(500).json({ error: "Failed to fetch watches" });
+    }
+  });
+
+  app.get("/api/watches/available", async (req, res) => {
+    try {
+      const availableWatches = await storage.getAvailableWatches();
+      res.json(availableWatches);
+    } catch (error) {
+      console.error("❌ Error fetching available watches:", error);
+      res.status(500).json({ error: "Failed to fetch available watches" });
+    }
+  });
+
+  app.get("/api/watches/search", async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: "Search query required" });
+      }
+      const watches = await storage.searchWatches(q);
+      res.json(watches);
+    } catch (error) {
+      console.error("❌ Error searching watches:", error);
+      res.status(500).json({ error: "Failed to search watches" });
+    }
+  });
+
+  app.get("/api/watches/reference/:reference", async (req, res) => {
+    try {
+      const { reference } = req.params;
+      const watch = await storage.getWatchByReference(reference);
+      if (!watch) {
+        return res.status(404).json({ error: "Watch not found" });
+      }
+      res.json(watch);
+    } catch (error) {
+      console.error("❌ Error fetching watch:", error);
+      res.status(500).json({ error: "Failed to fetch watch" });
+    }
+  });
+
+  app.post("/api/watches/import", async (req, res) => {
+    try {
+      console.log("📦 Starting watch collection import...");
+      
+      const watchesData = req.body;
+      if (!Array.isArray(watchesData)) {
+        return res.status(400).json({ error: "Expected array of watches" });
+      }
+      
+      console.log(`📊 Importing ${watchesData.length} watches`);
+      
+      let importedCount = 0;
+      let errorCount = 0;
+      
+      for (const watchData of watchesData) {
+        try {
+          await storage.createWatch({
+            reference: watchData.reference,
+            collectionName: watchData.collectionName || null,
+            brand: watchData.brand || 'Vacheron Constantin',
+            model: watchData.model || null,
+            description: watchData.description || null,
+            price: watchData.price || 0,
+            currency: watchData.currency || 'USD',
+            available: watchData.available || false,
+            stock: watchData.stock || null,
+            category: watchData.category || 'Luxury Watch',
+            specifications: watchData.specifications || null,
+            images: watchData.images || [],
+            tags: watchData.tags || [],
+            popularity: 0
+          });
+          
+          importedCount++;
+          
+          if (importedCount % 50 === 0) {
+            console.log(`📈 Imported ${importedCount}/${watchesData.length} watches...`);
+          }
+        } catch (error) {
+          console.error(`❌ Error importing watch ${watchData.reference}:`, error);
+          errorCount++;
+        }
+      }
+      
+      console.log(`✅ Import completed: ${importedCount} watches imported, ${errorCount} errors`);
+      
+      res.json({
+        success: true,
+        message: "Watch collection imported successfully",
+        imported: importedCount,
+        errors: errorCount,
+        total: watchesData.length
+      });
+      
+    } catch (error) {
+      console.error("❌ Watch import error:", error);
+      res.status(500).json({ error: "Import failed", details: error.message });
+    }
+  });
+
   // Generic Clients Import Route (for Maaz SHARIF data)
   app.post("/api/clients/import", async (req, res) => {
     try {
