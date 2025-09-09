@@ -26,7 +26,10 @@ import {
   insertGithubRepositorySchema,
   insertSelfEditingHistorySchema,
   insertAiLearningDocumentSchema,
-  insertCodeAnalysisReportSchema
+  insertCodeAnalysisReportSchema,
+  insertWatchCollectionSchema,
+  insertClientWatchPreferenceSchema,
+  insertWatchPriceHistorySchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1365,6 +1368,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Repositories retrieval error:', error);
       res.status(500).json({ error: "Failed to retrieve repositories" });
+    }
+  });
+
+  // ===== WATCH COLLECTION API ROUTES =====
+
+  // Get all watches
+  app.get("/api/watches", async (req, res) => {
+    try {
+      const { collection, category, available } = req.query;
+      let watches;
+
+      if (collection) {
+        watches = await storage.getWatchesByCollection(collection as string);
+      } else if (category) {
+        watches = await storage.getWatchesByCategory(category as string);
+      } else if (available === "true") {
+        watches = await storage.getAvailableWatches();
+      } else {
+        watches = await storage.getAllWatches();
+      }
+
+      res.json(watches);
+    } catch (error) {
+      console.error('Watches retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve watches" });
+    }
+  });
+
+  // Get single watch
+  app.get("/api/watches/:id", async (req, res) => {
+    try {
+      const watch = await storage.getWatch(req.params.id);
+      if (!watch) {
+        return res.status(404).json({ error: "Watch not found" });
+      }
+      res.json(watch);
+    } catch (error) {
+      console.error('Watch retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve watch" });
+    }
+  });
+
+  // Get watch by model code
+  app.get("/api/watches/model/:modelCode", async (req, res) => {
+    try {
+      const watch = await storage.getWatchByModelCode(req.params.modelCode);
+      if (!watch) {
+        return res.status(404).json({ error: "Watch not found" });
+      }
+      res.json(watch);
+    } catch (error) {
+      console.error('Watch by model code retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve watch" });
+    }
+  });
+
+  // Create new watch
+  app.post("/api/watches", async (req, res) => {
+    try {
+      const result = insertWatchCollectionSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.issues });
+      }
+
+      const watch = await storage.createWatch(result.data);
+      res.status(201).json(watch);
+    } catch (error) {
+      console.error('Watch creation error:', error);
+      res.status(500).json({ error: "Failed to create watch" });
+    }
+  });
+
+  // Update watch
+  app.put("/api/watches/:id", async (req, res) => {
+    try {
+      const watch = await storage.updateWatch(req.params.id, req.body);
+      res.json(watch);
+    } catch (error) {
+      console.error('Watch update error:', error);
+      res.status(500).json({ error: "Failed to update watch" });
+    }
+  });
+
+  // Delete watch
+  app.delete("/api/watches/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteWatch(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Watch not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Watch deletion error:', error);
+      res.status(500).json({ error: "Failed to delete watch" });
+    }
+  });
+
+  // Bulk update watch prices
+  app.post("/api/watches/bulk-price-update", async (req, res) => {
+    try {
+      const { updates } = req.body;
+      if (!Array.isArray(updates)) {
+        return res.status(400).json({ error: "Updates must be an array" });
+      }
+
+      const updatedWatches = await storage.bulkUpdateWatchPrices(updates);
+      res.json({ success: true, updatedCount: updatedWatches.length, watches: updatedWatches });
+    } catch (error) {
+      console.error('Bulk price update error:', error);
+      res.status(500).json({ error: "Failed to update watch prices" });
+    }
+  });
+
+  // Import watches from Excel/JSON data
+  app.post("/api/watches/import", async (req, res) => {
+    try {
+      const { watches } = req.body;
+      if (!Array.isArray(watches)) {
+        return res.status(400).json({ error: "Watches data must be an array" });
+      }
+
+      const importedWatches = [];
+      for (const watchData of watches) {
+        try {
+          const result = insertWatchCollectionSchema.safeParse(watchData);
+          if (result.success) {
+            const watch = await storage.createWatch(result.data);
+            importedWatches.push(watch);
+          }
+        } catch (error) {
+          console.log('Skipped invalid watch:', watchData.modelCode);
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        importedCount: importedWatches.length, 
+        totalProvided: watches.length,
+        watches: importedWatches 
+      });
+    } catch (error) {
+      console.error('Watch import error:', error);
+      res.status(500).json({ error: "Failed to import watches" });
+    }
+  });
+
+  // ===== CLIENT WATCH PREFERENCES API ROUTES =====
+
+  // Get client watch preferences
+  app.get("/api/clients/:clientId/watch-preferences", async (req, res) => {
+    try {
+      const preferences = await storage.getClientWatchPreferences(req.params.clientId);
+      res.json(preferences);
+    } catch (error) {
+      console.error('Client watch preferences retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve preferences" });
+    }
+  });
+
+  // Create client watch preference
+  app.post("/api/clients/:clientId/watch-preferences", async (req, res) => {
+    try {
+      const result = insertClientWatchPreferenceSchema.safeParse({
+        ...req.body,
+        clientId: req.params.clientId
+      });
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.issues });
+      }
+
+      const preference = await storage.createClientWatchPreference(result.data);
+      res.status(201).json(preference);
+    } catch (error) {
+      console.error('Client watch preference creation error:', error);
+      res.status(500).json({ error: "Failed to create preference" });
+    }
+  });
+
+  // Update client watch preference
+  app.put("/api/watch-preferences/:id", async (req, res) => {
+    try {
+      const preference = await storage.updateClientWatchPreference(req.params.id, req.body);
+      res.json(preference);
+    } catch (error) {
+      console.error('Client watch preference update error:', error);
+      res.status(500).json({ error: "Failed to update preference" });
+    }
+  });
+
+  // Delete client watch preference
+  app.delete("/api/watch-preferences/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteClientWatchPreference(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Preference not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Client watch preference deletion error:', error);
+      res.status(500).json({ error: "Failed to delete preference" });
+    }
+  });
+
+  // Get watch price history
+  app.get("/api/watches/:watchId/price-history", async (req, res) => {
+    try {
+      const history = await storage.getWatchPriceHistory(req.params.watchId);
+      res.json(history);
+    } catch (error) {
+      console.error('Watch price history retrieval error:', error);
+      res.status(500).json({ error: "Failed to retrieve price history" });
     }
   });
 
