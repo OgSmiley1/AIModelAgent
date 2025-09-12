@@ -1561,27 +1561,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Excel workbook download endpoint
-  app.get("/api/excel/download/:filename?", (req, res) => {
+  // Excel workbook download endpoint  
+  app.get("/api/excel/download/:filename?", async (req, res) => {
     try {
-      const filename = req.params.filename || "CRC_Warroom_AI_Enhanced_Workbook_20250912_052543.xlsx";
-      const fs = require('fs');
-      const path = require('path');
+      const fs = await import('fs');
+      const path = await import('path');
       
-      const filePath = path.resolve(filename);
+      console.log("🔄 Excel download requested...");
       
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: "Excel file not found" });
+      let requestedFile = req.params.filename || "CRC_Warroom_AI_Enhanced_Workbook_20250912_052543.xlsx";
+      let filePath = '';
+      let actualFileName = '';
+      
+      // First try the requested file in root directory
+      if (fs.existsSync(requestedFile)) {
+        filePath = path.resolve(requestedFile);
+        actualFileName = requestedFile;
+        console.log(`✅ Found requested file: ${actualFileName}`);
+      } 
+      // If not found, search for available Excel files
+      else {
+        console.log(`📁 Requested file ${requestedFile} not found, searching alternatives...`);
+        
+        const possibleFiles = [
+          'CRC_Warroom_AI_Enhanced_Workbook_20250912_052543.xlsx',
+          'CRC_Warroom_AI_Enhanced_Workbook_20250912_050652.xlsx',
+          'CRC_Warroom_Complete_Workbook_20250912_045802.xlsx',
+          'CRC_Warroom_Complete_Workbook_20250912_045840.xlsx',
+          'attached_assets/CRC_Warroom_Complete_20250812_033637_1757337567700.xlsx',
+          'attached_assets/Maaz_Warroom_Enhanced_1757337488210.xlsx',
+          'attached_assets/exported-data (49)_1757345821285.xlsx'
+        ];
+        
+        for (const file of possibleFiles) {
+          if (fs.existsSync(file)) {
+            filePath = path.resolve(file);
+            actualFileName = path.basename(file);
+            console.log(`✅ Using alternative file: ${actualFileName}`);
+            break;
+          }
+        }
+        
+        // If still no file found, scan directories for any Excel file
+        if (!filePath) {
+          console.log("📂 Scanning for any Excel file...");
+          const directories = ['.', 'attached_assets'];
+          
+          for (const dir of directories) {
+            try {
+              if (fs.existsSync(dir)) {
+                const files = fs.readdirSync(dir).filter(file => 
+                  (file.endsWith('.xlsx') || file.endsWith('.xlsm'))
+                );
+                
+                if (files.length > 0) {
+                  const newestFile = files
+                    .map(file => ({ 
+                      file: path.join(dir, file), 
+                      stat: fs.statSync(path.join(dir, file)) 
+                    }))
+                    .sort((a, b) => b.stat.mtime - a.stat.mtime)[0];
+                  
+                  filePath = path.resolve(newestFile.file);
+                  actualFileName = path.basename(newestFile.file);
+                  console.log(`✅ Using newest Excel file: ${actualFileName} from ${dir}`);
+                  break;
+                }
+              }
+            } catch (e) {
+              console.log(`⚠️ Could not scan directory ${dir}:`, e.message);
+            }
+          }
+        }
       }
       
+      if (!filePath) {
+        console.log("❌ No Excel workbook found");
+        return res.status(404).json({ 
+          error: "Excel file not found",
+          message: "No Excel workbook available for download"
+        });
+      }
+      
+      const fileSize = fs.statSync(filePath).size;
+      console.log(`📥 Serving Excel file: ${actualFileName} (${fileSize} bytes)`);
+      
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${actualFileName}"`);
+      res.setHeader('Content-Length', fileSize);
       
       const fileStream = fs.createReadStream(filePath);
+      fileStream.on('error', (err) => {
+        console.error('File stream error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "File read error" });
+        }
+      });
+      
       fileStream.pipe(res);
+      
     } catch (error) {
       console.error('Excel download error:', error);
-      res.status(500).json({ error: "Download failed" });
+      res.status(500).json({ error: "Download failed", details: error.message });
     }
   });
 

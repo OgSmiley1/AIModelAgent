@@ -27,7 +27,8 @@ import {
   DollarSign,
   MapPin,
   Crown,
-  AlertTriangle
+  AlertTriangle,
+  Plus
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { ClientProfileData } from "@/types";
