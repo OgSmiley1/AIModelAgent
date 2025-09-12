@@ -1561,5 +1561,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Excel workbook download endpoint
+  app.get("/api/excel/download/:filename?", (req, res) => {
+    try {
+      const filename = req.params.filename || "CRC_Warroom_AI_Enhanced_Workbook_20250912_052543.xlsx";
+      const fs = require('fs');
+      const path = require('path');
+      
+      const filePath = path.resolve(filename);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "Excel file not found" });
+      }
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error('Excel download error:', error);
+      res.status(500).json({ error: "Download failed" });
+    }
+  });
+
+  // List available Excel files
+  app.get("/api/excel/list", (req, res) => {
+    try {
+      const fs = require('fs');
+      const files = fs.readdirSync('.').filter(file => file.endsWith('.xlsx'));
+      
+      const fileList = files.map(file => {
+        const stats = fs.statSync(file);
+        return {
+          filename: file,
+          size: stats.size,
+          modified: stats.mtime,
+          downloadUrl: `/api/excel/download/${file}`
+        };
+      });
+      
+      res.json({ 
+        files: fileList,
+        count: fileList.length,
+        latest: fileList.find(f => f.filename.includes('052543')) || fileList[0]
+      });
+    } catch (error) {
+      console.error('Excel list error:', error);
+      res.status(500).json({ error: "Failed to list Excel files" });
+    }
+  });
+
   return httpServer;
 }
