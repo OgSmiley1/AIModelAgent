@@ -1589,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/excel/list", (req, res) => {
     try {
       const fs = require('fs');
-      const files = fs.readdirSync('.').filter(file => file.endsWith('.xlsx'));
+      const files = fs.readdirSync('.').filter(file => file.endsWith('.xlsx') || file.endsWith('.xlsm'));
       
       const fileList = files.map(file => {
         const stats = fs.statSync(file);
@@ -1609,6 +1609,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Excel list error:', error);
       res.status(500).json({ error: "Failed to list Excel files" });
+    }
+  });
+
+  // Export current system data to Excel
+  app.get("/api/export/excel", async (req, res) => {
+    try {
+      console.log("🔄 Starting Excel export of current system data...");
+      
+      // Get all system data
+      const clients = await storage.getAllClients();
+      const deals = await storage.getAllDeals();
+      const followUps = await storage.getPendingFollowUps();
+      
+      // Create export data structure
+      const exportData = {
+        timestamp: new Date().toISOString(),
+        summary: {
+          totalClients: clients.length,
+          totalDeals: deals.length,
+          pendingFollowUps: followUps.length
+        },
+        clients: clients.map(client => ({
+          id: client.id,
+          name: client.name,
+          phone: client.phone,
+          email: client.email,
+          status: client.status,
+          priority: client.priority,
+          leadScore: client.leadScore,
+          notes: client.notes,
+          createdAt: client.createdAt,
+          updatedAt: client.updatedAt
+        })),
+        deals: deals.map(deal => ({
+          id: deal.id,
+          clientId: deal.clientId,
+          value: deal.value,
+          status: deal.status,
+          stage: deal.stage,
+          description: deal.description,
+          createdAt: deal.createdAt,
+          updatedAt: deal.updatedAt
+        })),
+        followUps: followUps.map(followUp => ({
+          id: followUp.id,
+          clientId: followUp.clientId,
+          type: followUp.type,
+          title: followUp.title,
+          description: followUp.description,
+          scheduledFor: followUp.scheduledFor,
+          completed: followUp.completed
+        }))
+      };
+      
+      console.log(`📊 Export prepared: ${clients.length} clients, ${deals.length} deals, ${followUps.length} follow-ups`);
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="CRC_System_Export_${new Date().toISOString().slice(0,10)}.json"`);
+      
+      res.json(exportData);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ error: "Export failed", details: error.message });
     }
   });
 

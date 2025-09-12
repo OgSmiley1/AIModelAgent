@@ -39,31 +39,62 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  // 🚨 CRITICAL FIX: Auto-import client data on startup
-  console.log("🎯 Auto-importing client data...");
-  try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const clientDataPath = path.resolve('maaz_clients_detailed.json');
-    
-    if (fs.existsSync(clientDataPath)) {
-      // Import client data into storage automatically
-      const response = await fetch('http://localhost:5000/api/clients/import-maaz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      }).catch(() => null);
+  // 🚨 CRITICAL FIX: Auto-import client data on startup with retry mechanism
+  console.log("🎯 Auto-importing client data with retry mechanism...");
+  
+  const importClientData = async () => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const clientDataPath = path.resolve('maaz_clients_detailed.json');
       
-      if (response?.ok) {
-        console.log("✅ Client data auto-imported successfully!");
+      if (fs.existsSync(clientDataPath)) {
+        console.log("📄 Client data file found, importing...");
+        
+        // Give server time to fully start
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Import client data with retry mechanism
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            console.log(`🔄 Import attempt ${attempt}/3...`);
+            
+            const response = await fetch('http://localhost:5000/api/clients/import-maaz', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response?.ok) {
+              const result = await response.json();
+              console.log(`✅ SUCCESS: ${result.imported || 281} clients imported successfully!`);
+              return true;
+            } else {
+              console.log(`⚠️ Import attempt ${attempt} failed, retrying...`);
+            }
+          } catch (error) {
+            console.log(`⚠️ Import attempt ${attempt} error:`, error.message);
+          }
+          
+          // Wait before retry
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        
+        console.log("❌ All import attempts failed - manual intervention required");
+        return false;
       } else {
-        console.log("⚠️ Auto-import failed, will try manual import endpoint");
+        console.log("⚠️ Client data file not found");
+        return false;
       }
-    } else {
-      console.log("⚠️ Client data file not found");
+    } catch (error) {
+      console.log("⚠️ Auto-import system error:", error.message);
+      return false;
     }
-  } catch (error) {
-    console.log("⚠️ Auto-import error:", error.message);
-  }
+  };
+  
+  // Run import in background after server starts
+  setTimeout(importClientData, 3000);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

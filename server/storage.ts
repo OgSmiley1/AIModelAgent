@@ -166,10 +166,18 @@ export class MemStorage implements IStorage {
   private aiLearningDocuments: Map<string, AiLearningDocument> = new Map();
   private codeAnalysisReports: Map<string, CodeAnalysisReport> = new Map();
   private watches: Map<string, Watch> = new Map();
-
+  
   constructor() {
     // Initialize with some default system settings
     this.initializeDefaults();
+    
+    // Add periodic logging to ensure data persistence visibility
+    setInterval(() => {
+      const clientCount = this.clients.size;
+      if (clientCount > 0) {
+        console.log(`📊 Storage status: ${clientCount} clients maintained in memory`);
+      }
+    }, 30000); // Log every 30 seconds if data exists
   }
 
   private initializeDefaults() {
@@ -218,7 +226,9 @@ export class MemStorage implements IStorage {
   }
 
   async getAllClients(): Promise<Client[]> {
-    return Array.from(this.clients.values());
+    const clients = Array.from(this.clients.values());
+    console.log(`🔍 getAllClients() called - returning ${clients.length} clients`);
+    return clients;
   }
 
   async getClientsByStatus(status: string): Promise<Client[]> {
