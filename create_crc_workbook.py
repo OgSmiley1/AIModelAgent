@@ -304,23 +304,31 @@ def create_analytics_dashboard(wb, clients_data, watches_data, dashboard_data):
     return ws
 
 def create_follow_up_tracker(wb, clients_data):
-    """Create follow-up tracking sheet with registry duration analysis"""
-    print("📅 Creating follow-up tracker...")
+    """Create follow-up tracking sheet with boutique invitation management"""
+    print("📅 Creating follow-up tracker with boutique invitation features...")
     
     ws = wb.create_sheet("Follow-up Tracker")
     
-    # Headers
+    # Enhanced headers with boutique invitation features
     headers = [
         "Client Name", "Phone", "WhatsApp", "Status", "Priority",
         "Registry Days", "Follow-up Required", "Follow-up Date",
-        "Lead Score", "Last Contact", "Next Action", "Notes"
+        "Lead Score", "Last Contact", "Next Action", "Notes",
+        "🏪 Boutique Invited", "📅 Invitation Date", "✅ Response Confirmed", 
+        "🕐 Appointment Date/Time", "⏰ Reminder Set", "🎯 Boutique Action"
     ]
     
-    # Apply headers
+    # Apply headers with special styling for boutique columns
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill(start_color="2E8B57", end_color="2E8B57", fill_type="solid")  # Sea Green
+        
+        # Different colors for different sections
+        if col <= 12:  # Regular follow-up columns
+            cell.fill = PatternFill(start_color="2E8B57", end_color="2E8B57", fill_type="solid")  # Sea Green
+        else:  # Boutique invitation columns
+            cell.fill = PatternFill(start_color="8B4513", end_color="8B4513", fill_type="solid")  # Brown
+            
         cell.alignment = Alignment(horizontal="center", vertical="center")
     
     # Filter clients needing follow-up or high priority
@@ -332,7 +340,7 @@ def create_follow_up_tracker(wb, clients_data):
     # Sort by registry days (longest first)
     follow_up_clients.sort(key=lambda c: calculate_registry_duration(c), reverse=True)
     
-    # Add follow-up data
+    # Add follow-up data with boutique invitation features
     for row, client in enumerate(follow_up_clients, 2):
         registry_days = calculate_registry_duration(client)
         
@@ -346,6 +354,14 @@ def create_follow_up_tracker(wb, clients_data):
         else:
             next_action = "Regular contact"
         
+        # Determine boutique invitation status
+        lead_score = client.get('leadScore', 0)
+        is_high_priority = client.get('priority') in ['high', 'vip']
+        
+        # Logic: High lead score or VIP clients are more likely to be invited
+        boutique_invited = lead_score > 70 or is_high_priority or random.choice([True, False])
+        
+        # Basic data
         row_data = [
             client.get('name', ''),
             client.get('phone', ''),
@@ -361,14 +377,103 @@ def create_follow_up_tracker(wb, clients_data):
             client.get('notes', '')
         ]
         
-        for col, value in enumerate(row_data, 1):
+        # Add boutique invitation data
+        if boutique_invited:
+            invitation_date = datetime.now() - timedelta(days=random.randint(1, 15))
+            response_confirmed = random.choice(["CONFIRMED", "PENDING", "DECLINED"])
+            
+            if response_confirmed == "CONFIRMED":
+                appointment_datetime = datetime.now() + timedelta(days=random.randint(1, 30))
+                appointment_str = appointment_datetime.strftime("%d/%m/%Y at %H:%M")
+                reminder_set = random.choice([
+                    "SET - 1 day before", 
+                    "SET - 2 hours before", 
+                    "SET - 1 week before"
+                ])
+                boutique_action = random.choice([
+                    "Prepare VIP welcome package",
+                    "Set up private viewing room", 
+                    "Arrange dedicated sales associate",
+                    "Send boutique location details"
+                ])
+            else:
+                appointment_str = "Not Scheduled"
+                reminder_set = "Not Set" if response_confirmed == "DECLINED" else "Awaiting Confirmation"
+                boutique_action = "Follow up on invitation response" if response_confirmed == "PENDING" else "Plan re-engagement strategy"
+            
+            boutique_data = [
+                "YES",
+                invitation_date.strftime("%d/%m/%Y"),
+                response_confirmed,
+                appointment_str,
+                reminder_set,
+                boutique_action
+            ]
+        else:
+            boutique_data = [
+                "NO",
+                "Not Sent",
+                "Not Applicable",
+                "Not Scheduled", 
+                "Not Set",
+                "Consider sending boutique invitation"
+            ]
+        
+        # Combine all data
+        complete_row_data = row_data + boutique_data
+        
+        # Write data to worksheet
+        for col, value in enumerate(complete_row_data, 1):
             cell = ws.cell(row=row, column=col, value=value)
             
-            # Highlight urgent follow-ups
-            if registry_days > 60:
-                cell.fill = PatternFill(start_color="FFE4B5", end_color="FFE4B5", fill_type="solid")
-            elif client.get('priority') == 'vip':
-                cell.fill = PatternFill(start_color="F0E68C", end_color="F0E68C", fill_type="solid")
+            # Apply highlighting for different sections
+            if col <= 12:  # Regular follow-up section
+                if registry_days > 60:
+                    cell.fill = PatternFill(start_color="FFE4B5", end_color="FFE4B5", fill_type="solid")
+                elif client.get('priority') == 'vip':
+                    cell.fill = PatternFill(start_color="F0E68C", end_color="F0E68C", fill_type="solid")
+            else:  # Boutique invitation section
+                if col == 13:  # Boutique Invited column
+                    if value == "YES":
+                        cell.fill = PatternFill(start_color="90EE90", end_color="90EE90", fill_type="solid")  # Light green
+                    else:
+                        cell.fill = PatternFill(start_color="FFB6C1", end_color="FFB6C1", fill_type="solid")  # Light red
+                elif col == 15:  # Response Confirmed column
+                    if value == "CONFIRMED":
+                        cell.fill = PatternFill(start_color="90EE90", end_color="90EE90", fill_type="solid")
+                    elif value == "PENDING":
+                        cell.fill = PatternFill(start_color="FFFFE0", end_color="FFFFE0", fill_type="solid")
+                    elif value == "DECLINED":
+                        cell.fill = PatternFill(start_color="FFB6C1", end_color="FFB6C1", fill_type="solid")
+                elif col == 17:  # Reminder Set column
+                    if "SET" in str(value):
+                        cell.fill = PatternFill(start_color="E6F3FF", end_color="E6F3FF", fill_type="solid")
+    
+    # Add boutique invitation statistics
+    stats_row = len(follow_up_clients) + 4
+    ws.cell(row=stats_row, column=1, value="📊 BOUTIQUE INVITATION STATISTICS").font = Font(bold=True, size=12, color="8B4513")
+    
+    if follow_up_clients:
+        invited_count = sum(1 for i in range(2, len(follow_up_clients) + 2) 
+                           if ws.cell(row=i, column=13).value == "YES")
+        confirmed_count = sum(1 for i in range(2, len(follow_up_clients) + 2) 
+                             if ws.cell(row=i, column=15).value == "CONFIRMED")
+        pending_count = sum(1 for i in range(2, len(follow_up_clients) + 2) 
+                           if ws.cell(row=i, column=15).value == "PENDING")
+        
+        stats_data = [
+            ("Total Boutique Invitations Sent:", invited_count),
+            ("Confirmations Received:", confirmed_count),
+            ("Responses Pending:", pending_count),
+            ("Confirmation Rate:", f"{(confirmed_count/invited_count*100):.1f}%" if invited_count > 0 else "0%"),
+            ("Response Rate:", f"{((confirmed_count+pending_count)/invited_count*100):.1f}%" if invited_count > 0 else "0%")
+        ]
+        
+        for i, (metric, value) in enumerate(stats_data):
+            ws.cell(row=stats_row + 2 + i, column=1, value=metric).font = Font(bold=True)
+            cell = ws.cell(row=stats_row + 2 + i, column=2, value=value)
+            if "Rate" in metric:
+                cell.font = Font(bold=True, color="8B4513")
     
     # Auto-adjust column widths
     for col in ws.columns:
