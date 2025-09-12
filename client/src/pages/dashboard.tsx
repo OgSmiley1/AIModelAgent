@@ -9,13 +9,16 @@ import { AlertPanel } from "@/components/dashboard/alert-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Send } from "lucide-react";
+import { Bot, Send, Lightbulb, Download } from "lucide-react";
+import { WelcomeGuide } from "@/components/dashboard/welcome-guide";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { useWebSocket } from "@/hooks/use-websocket";
 import type { DashboardStats, LiveMessage, SystemAlert } from "@/types";
 
 export default function Dashboard() {
   const [liveMessages, setLiveMessages] = useState<LiveMessage[]>([]);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
+  const [showWelcomeGuide, setShowWelcomeGuide] = useState(true);
   const [aiMessages, setAiMessages] = useState<Array<{role: 'assistant' | 'user', content: string, timestamp: Date}>>([
     {
       role: 'assistant',
@@ -98,7 +101,7 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar 
-        whatsappConnected={whatsappStatus?.connected || false}
+        whatsappConnected={(whatsappStatus as any)?.connected || false}
         aiOnline={connected}
         databaseActive={true}
       />
@@ -110,8 +113,67 @@ export default function Dashboard() {
           <div className="h-full flex">
             {/* Main Dashboard Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Welcome Guide (dismissible) */}
+              {showWelcomeGuide && (
+                <WelcomeGuide 
+                  onDismiss={() => setShowWelcomeGuide(false)}
+                  className="mb-6"
+                />
+              )}
+              
               {/* Stats Cards */}
               {stats && <StatsCards stats={stats} />}
+              
+              {/* Quick Actions Panel */}
+              <Card className="luxury-card border-primary/20 bg-gradient-to-r from-primary/5 to-background">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-3 text-primary">
+                    <Lightbulb className="h-5 w-5" />
+                    <span>Quick Actions</span>
+                    <HelpTooltip 
+                      content="Common tasks and shortcuts to boost your productivity"
+                      title="Quick Actions Help"
+                      side="bottom"
+                    />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Button 
+                      variant="outline" 
+                      className="luxury-card p-4 h-auto flex flex-col items-start space-y-2"
+                      onClick={() => window.location.href = '/clients'}
+                      data-testid="quick-action-clients"
+                    >
+                      <span className="font-semibold">View All Clients</span>
+                      <span className="text-sm text-muted-foreground">Browse 281 client records with advanced filtering</span>
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="luxury-card p-4 h-auto flex flex-col items-start space-y-2"
+                      onClick={() => window.location.href = '/documents'}
+                      data-testid="quick-action-excel"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Download size={16} />
+                        <span className="font-semibold">AI Excel Workbook</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">8-sheet AI-enhanced business intelligence suite</span>
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="luxury-card p-4 h-auto flex flex-col items-start space-y-2"
+                      onClick={() => window.location.href = '/whatsapp'}
+                      data-testid="quick-action-whatsapp"
+                    >
+                      <span className="font-semibold">Setup WhatsApp</span>
+                      <span className="text-sm text-muted-foreground">Connect your WhatsApp Business account</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
               
               {/* Advanced AI Quick Access */}
               <Card className="luxury-card border-red-500/30 bg-gradient-to-r from-red-950/20 to-black/50">
@@ -122,6 +184,11 @@ export default function Dashboard() {
                     <span className="status-luxury-restricted text-white text-xs px-2 py-0.5 rounded-full font-medium">
                       🔒 RESTRICTED ACCESS
                     </span>
+                    <HelpTooltip 
+                      content="Enhanced AI with psychological analysis, sentiment detection, and advanced client insights. Requires special authorization."
+                      title="Advanced AI Features"
+                      side="bottom"
+                    />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

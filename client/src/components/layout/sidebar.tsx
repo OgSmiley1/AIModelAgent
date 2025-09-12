@@ -11,22 +11,109 @@ import {
   Settings,
   Circle,
   Brain,
-  Shield
+  Shield,
+  HelpCircle,
+  Sparkles,
+  Star
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SiWhatsapp } from "react-icons/si";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
-  { name: "WhatsApp", href: "/whatsapp", icon: SiWhatsapp, status: "live" },
-  { name: "Clients", href: "/clients", icon: Users },
-  { name: "Sales Forecasting", href: "/forecasting", icon: Brain },
-  { name: "AI Chat", href: "/ai-chat", icon: MessageSquare },
-  { name: "AI Agent", href: "/ai-agent", icon: Brain },
-  { name: "Advanced AI", href: "/advanced-ai", icon: Shield, status: "restricted" },
-  { name: "Documents", href: "/documents", icon: FileText },
-  { name: "Trip Planner", href: "/trip-planner", icon: Route },
-  { name: "Analytics", href: "/analytics", icon: TrendingUp },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { 
+    name: "Dashboard", 
+    href: "/dashboard", 
+    icon: BarChart3,
+    description: "Main overview with key metrics and live activity",
+    category: "Core",
+    priority: 1
+  },
+  { 
+    name: "WhatsApp Business", 
+    href: "/whatsapp", 
+    icon: SiWhatsapp, 
+    status: "live",
+    description: "Live WhatsApp message monitoring and AI responses", 
+    category: "Core",
+    priority: 2,
+    badge: "LIVE"
+  },
+  { 
+    name: "Client Registry", 
+    href: "/clients", 
+    icon: Users,
+    description: "Manage 281 client records with lead scoring",
+    category: "Core", 
+    priority: 3,
+    badge: "281"
+  },
+  { 
+    name: "Sales Intelligence", 
+    href: "/forecasting", 
+    icon: Brain,
+    description: "Advanced revenue forecasting and performance analytics",
+    category: "Analytics",
+    priority: 4
+  },
+  { 
+    name: "AI Assistant", 
+    href: "/ai-chat", 
+    icon: MessageSquare,
+    description: "Smart AI assistant for client insights and automation",
+    category: "AI Tools",
+    priority: 5
+  },
+  { 
+    name: "AI Agent Pro", 
+    href: "/ai-agent", 
+    icon: Brain,
+    description: "Advanced AI agent with autonomous capabilities", 
+    category: "AI Tools",
+    priority: 6
+  },
+  { 
+    name: "Advanced AI System", 
+    href: "/advanced-ai", 
+    icon: Shield, 
+    status: "restricted",
+    description: "🔒 Enhanced AI with psychological analysis (Restricted Access)",
+    category: "AI Tools",
+    priority: 7,
+    premium: true
+  },
+  { 
+    name: "AI Excel Suite", 
+    href: "/documents", 
+    icon: FileText,
+    description: "AI-enhanced Excel workbook with 8 comprehensive sheets",
+    category: "Tools",
+    priority: 8,
+    highlight: "new"
+  },
+  { 
+    name: "Client Visits", 
+    href: "/trip-planner", 
+    icon: Route,
+    description: "Plan and schedule client meetings and visits",
+    category: "Tools",
+    priority: 9
+  },
+  { 
+    name: "Business Reports", 
+    href: "/analytics", 
+    icon: TrendingUp,
+    description: "Comprehensive business intelligence and reporting",
+    category: "Analytics", 
+    priority: 10
+  },
+  { 
+    name: "System Settings", 
+    href: "/settings", 
+    icon: Settings,
+    description: "Configure system preferences and integrations",
+    category: "System",
+    priority: 11
+  },
 ];
 
 interface SidebarProps {
@@ -57,41 +144,120 @@ export function Sidebar({
         </div>
       </div>
       
-      {/* Navigation */}
-      <nav className="p-4 space-y-2" data-testid="navigation">
+      {/* Quick Access Section */}
+      <div className="px-4 pb-2">
+        <div className="flex items-center space-x-2 mb-3">
+          <Star size={14} className="text-primary" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quick Access</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {navigation.filter(item => item.priority <= 3).map((item) => {
+            const Icon = item.icon;
+            const isActive = location === item.href || (location === "/" && item.href === "/dashboard");
+            
+            return (
+              <TooltipProvider key={item.name}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link 
+                      href={item.href}
+                      className={cn(
+                        "flex flex-col items-center p-3 rounded-lg text-xs transition-all duration-300",
+                        isActive 
+                          ? "luxury-button text-primary-foreground shadow-lg" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50 luxury-card"
+                      )}
+                      data-testid={`quick-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <Icon size={16} className="mb-1" />
+                      <span className="text-center font-medium">{item.name.split(' ')[0]}</span>
+                      {item.badge && (
+                        <span className="text-xs mt-1 bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Navigation */}
+      <nav className="px-4 space-y-1" data-testid="navigation">
+        <div className="flex items-center space-x-2 mb-3">
+          <Sparkles size={14} className="text-primary" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">All Features</span>
+        </div>
+        
         {navigation.map((item) => {
           const isActive = location === item.href || (location === "/" && item.href === "/dashboard");
           const Icon = item.icon;
           
           return (
-            <Link 
-              key={item.name} 
-              href={item.href}
-              className={cn(
-                "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition-all duration-300 font-medium",
-                isActive 
-                  ? "luxury-button text-primary-foreground shadow-lg" 
-                  : item.status === "restricted"
-                  ? "text-red-400 hover:text-red-300 hover:bg-red-950/20 restricted-element"
-                  : item.status === "live"
-                  ? "text-foreground hover:text-primary hover:bg-primary/10 luxury-card"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50 luxury-card"
-              )}
-              data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
-            >
-              <Icon size={18} />
-              <span className="premium-text">{item.name}</span>
-              {item.status === "live" && (
-                <span className="ml-auto status-luxury-online text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                  LIVE
-                </span>
-              )}
-              {item.status === "restricted" && (
-                <span className="ml-auto status-luxury-restricted text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                  🔒
-                </span>
-              )}
-            </Link>
+            <TooltipProvider key={item.name}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link 
+                    href={item.href}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-300 font-medium group",
+                      isActive 
+                        ? "luxury-button text-primary-foreground shadow-lg" 
+                        : item.status === "restricted"
+                        ? "text-red-400 hover:text-red-300 hover:bg-red-950/20 restricted-element"
+                        : item.status === "live"
+                        ? "text-foreground hover:text-primary hover:bg-primary/10 luxury-card"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50 luxury-card"
+                    )}
+                    data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Icon size={16} />
+                    <span className="premium-text flex-1">{item.name}</span>
+                    
+                    {/* Status and badges */}
+                    <div className="flex items-center space-x-1">
+                      {item.highlight === "new" && (
+                        <span className="status-luxury-new text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                          NEW
+                        </span>
+                      )}
+                      
+                      {item.status === "live" && (
+                        <span className="status-luxury-online text-white text-xs px-2 py-0.5 rounded-full font-medium animate-pulse">
+                          LIVE
+                        </span>
+                      )}
+                      
+                      {item.status === "restricted" && (
+                        <span className="status-luxury-restricted text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                          🔒
+                        </span>
+                      )}
+                      
+                      {item.premium && (
+                        <Star size={12} className="text-yellow-400" />
+                      )}
+                    </div>
+                    
+                    <HelpCircle size={12} className="text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <p className="font-medium">{item.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                  {item.category && (
+                    <p className="text-xs text-primary mt-1">Category: {item.category}</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         })}
       </nav>
