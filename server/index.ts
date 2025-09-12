@@ -39,6 +39,32 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // 🚨 CRITICAL FIX: Auto-import client data on startup
+  console.log("🎯 Auto-importing client data...");
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const clientDataPath = path.resolve('maaz_clients_detailed.json');
+    
+    if (fs.existsSync(clientDataPath)) {
+      // Import client data into storage automatically
+      const response = await fetch('http://localhost:5000/api/clients/import-maaz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }).catch(() => null);
+      
+      if (response?.ok) {
+        console.log("✅ Client data auto-imported successfully!");
+      } else {
+        console.log("⚠️ Auto-import failed, will try manual import endpoint");
+      }
+    } else {
+      console.log("⚠️ Client data file not found");
+    }
+  } catch (error) {
+    console.log("⚠️ Auto-import error:", error.message);
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
