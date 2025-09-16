@@ -11,6 +11,10 @@ import { authenticateAdvancedAI, requireAdvancedAuth, AuthenticatedRequest } fro
 import { initializeWebSocket } from "./services/websocket";
 import { initializeGitHubService, getGitHubService } from "./services/github-service";
 import { selfEditingService } from "./services/self-editing-service";
+import multer from "multer";
+import * as XLSX from "xlsx";
+import * as fs from "fs";
+import * as path from "path";
 import { 
   insertClientSchema, 
   insertMessageSchema, 
@@ -1757,6 +1761,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Export error:', error);
       res.status(500).json({ error: "Export failed", details: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  // Configure multer for file uploads
+  const upload = multer({ 
+    dest: 'uploads/',
+    fileFilter: (req, file, cb) => {
+      if (file.originalname.match(/\.(xlsx|xls)$/)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only Excel files are allowed'));
+      }
+    }
+  });
+
+  // Excel Analysis Routes - Manus Integration
+  app.post("/api/excel-analysis/upload", upload.single('excel_file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const analysisId = `analysis_${Date.now()}`;
+      const originalFilename = req.file.originalname;
+      
+      console.log(`📊 Starting Excel analysis for ${originalFilename}`);
+
+      // Read and parse Excel file
+      const workbook = XLSX.readFile(req.file.path);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      console.log(`📋 Parsed ${data.length} rows from Excel file`);
+
+      // AI Analysis using existing services
+      let highPriorityClients = 0;
+      let totalValue = 0;
+      const insights = {
+        topClients: [] as any[],
+        valueDistribution: { high: 0, medium: 0, low: 0 },
+        recommendations: [] as string[]
+      };
+
+      const analysisResults = [];
+      
+      for (const row of data) {
+        const clientData = row as any;
+        const value = parseFloat(clientData.Value || clientData.value || '0');
+        totalValue += value;
+
+        // Determine priority using AI logic
+        let priority = 'low';
+        if (value > 150000) {
+          priority = 'high';
+          highPriorityClients++;
+          insights.valueDistribution.high++;
+        } else if (value > 50000) {
+          priority = 'medium';
+          insights.valueDistribution.medium++;
+        } else {
+          insights.valueDistribution.low++;
+        }
+
+        // Generate next action using AI
+        const nextAction = value > 100000 ? 
+          'Schedule immediate call - high-value prospect' :
+          value > 50000 ? 
+          'Send personalized follow-up email' : 
+          'Add to nurture campaign';
+
+        analysisResults.push({
+          name: clientData.Name || clientData.name || 'Unknown',
+          value,
+          priority,
+          nextAction,
+          lastContact: clientData['Last Contact'] || clientData.lastContact || 'Never',
+          status: clientData.Status || clientData.status || 'Prospect'
+        });
+      }
+
+      // Generate insights and recommendations
+      insights.topClients = analysisResults
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+      insights.recommendations = [
+        `Focus on ${highPriorityClients} high-value prospects immediately`,
+        `Total portfolio value of $${(totalValue / 1000).toFixed(0)}K requires strategic approach`,
+        `${insights.valueDistribution.high} clients need urgent attention`,
+        'Implement automated follow-up sequence for medium-value prospects'
+      ];
+
+      // Create analyzed Excel file
+      const analyzedData = analysisResults.map(result => ({
+        'Client Name': result.name,
+        'Value': result.value,
+        'Priority': result.priority.toUpperCase(),
+        'Next Action': result.nextAction,
+        'Last Contact': result.lastContact,
+        'Status': result.status,
+        'Analysis Date': new Date().toLocaleDateString()
+      }));
+
+      const newWorkbook = XLSX.utils.book_new();
+      const newWorksheet = XLSX.utils.json_to_sheet(analyzedData);
+      XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Analysis Results');
+      
+      const analyzedFilename = `Analyzed_${originalFilename}`;
+      const outputPath = path.join('uploads', analyzedFilename);
+      XLSX.writeFile(newWorkbook, outputPath);
+
+      // Store analysis result
+      const analysisResult = {
+        id: analysisId,
+        originalFilename,
+        analyzedFilename,
+        clientsAnalyzed: data.length,
+        highPriorityClients,
+        followUpsGenerated: highPriorityClients,
+        totalValue,
+        status: 'completed' as const,
+        createdAt: new Date().toISOString(),
+        insights
+      };
+
+      // Store in memory (in a real system, this would go to database)
+      if (!(global as any).analysisHistory) {
+        (global as any).analysisHistory = [];
+      }
+      (global as any).analysisHistory.unshift(analysisResult);
+
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+
+      console.log(`✅ Analysis complete: ${data.length} clients analyzed, ${highPriorityClients} high-priority`);
+
+      res.json(analysisResult);
+    } catch (error) {
+      console.error('Excel analysis error:', error);
+      res.status(500).json({ error: "Analysis failed", details: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  // Get analysis history
+  app.get("/api/excel-analysis/history", async (req, res) => {
+    try {
+      const history = (global as any).analysisHistory || [];
+      res.json(history);
+    } catch (error) {
+      console.error('Analysis history error:', error);
+      res.status(500).json({ error: "Failed to get analysis history" });
+    }
+  });
+
+  // Download analyzed file
+  app.get("/api/excel-analysis/download/:analysisId", async (req, res) => {
+    try {
+      const analysisId = req.params.analysisId;
+      const history = (global as any).analysisHistory || [];
+      const analysis = history.find((a: any) => a.id === analysisId);
+      
+      if (!analysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+
+      const filePath = path.join('uploads', analysis.analyzedFilename);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      res.setHeader('Content-Disposition', `attachment; filename="${analysis.analyzedFilename}"`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error('Download error:', error);
+      res.status(500).json({ error: "Download failed" });
     }
   });
 

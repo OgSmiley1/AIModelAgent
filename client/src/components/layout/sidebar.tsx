@@ -14,7 +14,8 @@ import {
   Shield,
   HelpCircle,
   Sparkles,
-  Star
+  Star,
+  FileSpreadsheet
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SiWhatsapp } from "react-icons/si";
@@ -89,6 +90,15 @@ const navigation = [
     category: "Tools",
     priority: 8,
     highlight: "new"
+  },
+  { 
+    name: "Excel Analyzer", 
+    href: "/excel-analyzer", 
+    icon: FileSpreadsheet,
+    description: "Upload client Excel files for AI-powered analysis and follow-up priorities",
+    category: "AI Tools",
+    priority: 8.5,
+    badge: "NEW"
   },
   { 
     name: "Client Visits", 

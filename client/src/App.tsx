@@ -13,6 +13,7 @@ import Documents from "@/pages/documents";
 import TripPlanner from "@/pages/trip-planner";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
+import ExcelAnalyzer from "@/pages/excel-analyzer";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/documents" component={Documents} />
       <Route path="/trip-planner" component={TripPlanner} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/excel-analyzer" component={ExcelAnalyzer} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
