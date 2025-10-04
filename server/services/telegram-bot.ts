@@ -1,12 +1,12 @@
 import TelegramBot from 'node-telegram-bot-api';
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 import { storage } from '../storage';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 
 let bot: TelegramBot | null = null;
-let openai: OpenAI | null = null;
+let groq: Groq | null = null;
 
 export function initializeTelegramBot() {
   if (!TELEGRAM_BOT_TOKEN) {
@@ -14,10 +14,11 @@ export function initializeTelegramBot() {
     return null;
   }
 
-  if (!OPENAI_API_KEY) {
-    console.log('⚠️ OPENAI_API_KEY not set - AI features disabled');
+  if (!GROQ_API_KEY) {
+    console.log('⚠️ GROQ_API_KEY not set - AI features disabled');
   } else {
-    openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+    groq = new Groq({ apiKey: GROQ_API_KEY });
+    console.log('🤖 Groq AI initialized successfully');
   }
 
   bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
@@ -50,12 +51,13 @@ export function initializeTelegramBot() {
       `/list_sold - List sold clients\n` +
       `/list_hesitant - List hesitant clients\n` +
       `/list_callback - List clients needing callback\n\n` +
-      `*Natural Language (Requires OpenAI):*\n` +
+` *Natural Language (Powered by Groq AI):*\n` +
       `📋 "Show me all VIP clients"\n` +
       `👤 "Tell me about Client #108884411"\n` +
-      `✏️ "Set Client X to Sold"\n` +
+      `🔍 "Find client 108884411"\n` +
+      `✏️ "Update his status to Sold"\n` +
       `📞 "Remind me to call Client Y tomorrow"\n` +
-      `🔍 "Find clients interested in 4300V"`
+      `❌ "Close the request for client Z"`
     );
   });
 
@@ -219,40 +221,72 @@ export function initializeTelegramBot() {
 }
 
 async function processNaturalLanguageRequest(message: string): Promise<string> {
-  if (!openai) {
-    return '⚠️ AI processing is not available. Please set up OpenAI API key.';
+  if (!groq) {
+    return '⚠️ AI processing is not available. Please set up Groq API key.';
   }
 
   try {
     // Get all clients for context
     const clients = await storage.getAllClients();
     
-    // Use OpenAI to understand the intent and extract parameters
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    // Build a sample of client data to help AI understand the structure
+    const sampleClients = clients.slice(0, 3).map(c => ({
+      name: c.name,
+      phone: c.phone,
+      status: c.status,
+      id: c.id
+    }));
+    
+    // Use Groq to understand the intent and extract parameters
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',
-          content: `You are an AI assistant for a luxury watch CRM system. Analyze user requests and execute them.
-          
-Available actions:
-1. QUERY_CLIENTS: Search/filter/list clients
-2. GET_CLIENT: Get details about a specific client
-3. UPDATE_CLIENT: Update client information (status, boutique associate, etc)
-4. CREATE_FOLLOWUP: Schedule a follow-up
-5. STATS: Provide statistics
+          content: `You are an AI assistant for Vacheron Constantin luxury watch CRM. Analyze user requests and execute them.
 
-Client statuses: requested_callback, changed_mind, confirmed, sold, hesitant, shared_with_boutique, vip, active, prospect, inactive
+UNDERSTANDING REQUESTS:
+- "Find client 108884411" or "Tell me about 108884411" → Search by name/phone/ID
+- "Update his/her status to X" → Update client status
+- "Close the request" → Update status to changed_mind
 
-When updating status to "shared_with_boutique", a boutique associate name is required.
+AVAILABLE ACTIONS:
+1. QUERY_CLIENTS: Search/filter/list clients by status, name, or criteria
+2. GET_CLIENT: Get details about a specific client (by name, phone, or number in their name)
+3. UPDATE_CLIENT: Update client status, priority, or boutique associate
+4. CREATE_FOLLOWUP: Schedule a follow-up task
+5. STATS: Provide CRM statistics
 
-Total clients in system: ${clients.length}
+CLIENT STATUSES: 
+- requested_callback (needs callback)
+- confirmed (confirmed interest)
+- sold (purchase complete)
+- hesitant (unsure/needs nurturing)
+- shared_with_boutique (passed to boutique team)
+- changed_mind (not interested/closed)
 
-Respond with a JSON object:
+SEARCH LOGIC:
+- Client names often contain numbers like "Client 108884411"
+- Search by: exact name match, partial name, phone number, or ID
+- When user says "client 108884411", search for clients where name contains "108884411"
+
+Total clients: ${clients.length}
+Sample data: ${JSON.stringify(sampleClients, null, 2)}
+
+Respond ONLY with valid JSON:
 {
   "action": "QUERY_CLIENTS|GET_CLIENT|UPDATE_CLIENT|CREATE_FOLLOWUP|STATS",
-  "params": {object with relevant parameters},
-  "response": "user-friendly message to show"
+  "params": {
+    "clientId": "...",
+    "name": "partial or full client name",
+    "status": "...",
+    "search": "search term",
+    "boutiqueSalesAssociateName": "...",
+    "priority": "...",
+    "type": "call|email|meeting",
+    "scheduledFor": "ISO date string"
+  },
+  "response": "user-friendly message"
 }`
         },
         {
@@ -260,7 +294,8 @@ Respond with a JSON object:
           content: message
         }
       ],
-      response_format: { type: 'json_object' }
+      response_format: { type: 'json_object' },
+      temperature: 0.3
     });
 
     const result = JSON.parse(completion.choices[0]?.message?.content || '{}');
@@ -271,15 +306,9 @@ Respond with a JSON object:
   } catch (error) {
     console.error('AI processing error:', error);
     
-    // Handle OpenAI quota/rate limit errors
-    if ((error as any).status === 429 || (error as any).code === 'insufficient_quota') {
-      return '⚠️ *OpenAI API Quota Exceeded*\n\n' +
-        'The AI language processing feature requires OpenAI credits. Please check your OpenAI billing at: https://platform.openai.com/account/billing\n\n' +
-        'Until then, you can use these direct commands:\n' +
-        '• `/stats` - View CRM statistics\n' +
-        '• `/list_confirmed` - List confirmed clients\n' +
-        '• `/list_sold` - List sold clients\n' +
-        '• `/list_hesitant` - List hesitant clients';
+    // Handle API errors
+    if ((error as any).status === 429 || (error as any).code === 'rate_limit_exceeded') {
+      return '⚠️ *API Rate Limit*\n\nPlease wait a moment and try again.';
     }
     
     throw error;
@@ -335,11 +364,15 @@ async function executeAction(
         const client = clients.find(c => 
           c.id === params.clientId ||
           c.name?.toLowerCase().includes(params.name?.toLowerCase()) ||
-          c.phone === params.phone
+          c.phone === params.phone ||
+          (params.search && (
+            c.name?.toLowerCase().includes(params.search.toLowerCase()) ||
+            c.phone?.includes(params.search)
+          ))
         );
         
         if (!client) {
-          return `❌ Client not found. Try searching with name, phone, or ID.`;
+          return `❌ Client not found. Try searching with name, phone, or number.`;
         }
         
         let response = `👤 *${client.name}*\n\n`;
@@ -352,6 +385,7 @@ async function executeAction(
         if (client.interests) response += `🕐 Interests: ${client.interests}\n`;
         if (client.leadScore) response += `📈 Lead Score: ${client.leadScore}/100\n`;
         if (client.boutiqueSalesAssociateName) response += `🏪 Boutique Associate: ${client.boutiqueSalesAssociateName}\n`;
+        
         if (client.statusSince) {
           const daysSince = Math.floor((Date.now() - new Date(client.statusSince).getTime()) / (1000 * 60 * 60 * 24));
           response += `⏱️ In current status: ${daysSince} days\n`;
@@ -364,11 +398,12 @@ async function executeAction(
       case 'UPDATE_CLIENT': {
         const client = clients.find(c => 
           c.id === params.clientId ||
-          c.name?.toLowerCase().includes(params.name?.toLowerCase())
+          c.name?.toLowerCase().includes(params.name?.toLowerCase()) ||
+          (params.search && c.name?.toLowerCase().includes(params.search.toLowerCase()))
         );
         
         if (!client) {
-          return `❌ Client not found. Please provide the client name or ID.`;
+          return `❌ Client not found. Please provide the client name, number, or ID.`;
         }
         
         const updates: any = {};
@@ -388,7 +423,10 @@ async function executeAction(
         
         await storage.updateClient(client.id, updates);
         
-        return `✅ ${client.name} updated successfully!\n\n${aiResponse}`;
+        let statusText = updates.status ? updates.status.replace(/_/g, ' ') : '';
+        return `✅ ${client.name} updated successfully!\n\n` +
+               `New status: ${statusText}\n` +
+               (aiResponse ? `\n${aiResponse}` : '');
       }
       
       case 'CREATE_FOLLOWUP': {
