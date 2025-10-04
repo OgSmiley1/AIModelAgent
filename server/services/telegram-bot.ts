@@ -44,14 +44,147 @@ export function initializeTelegramBot() {
     bot?.sendMessage(
       chatId,
       `🤖 CRM Bot Commands:\n\n` +
-      `📋 Query clients: "Show me all VIP clients"\n` +
-      `👤 Get details: "Tell me about Client #108884411"\n` +
-      `✏️ Update status: "Set Client X to Sold"\n` +
-      `📞 Create follow-up: "Remind me to call Client Y tomorrow"\n` +
-      `📊 Statistics: "How many clients need callback?"\n` +
-      `🔍 Search: "Find clients interested in 4300V"\n\n` +
-      `I understand natural language - just tell me what you need!`
+      `*Direct Commands (No AI needed):*\n` +
+      `/stats - View CRM statistics\n` +
+      `/list_confirmed - List confirmed clients\n` +
+      `/list_sold - List sold clients\n` +
+      `/list_hesitant - List hesitant clients\n` +
+      `/list_callback - List clients needing callback\n\n` +
+      `*Natural Language (Requires OpenAI):*\n` +
+      `📋 "Show me all VIP clients"\n` +
+      `👤 "Tell me about Client #108884411"\n` +
+      `✏️ "Set Client X to Sold"\n` +
+      `📞 "Remind me to call Client Y tomorrow"\n` +
+      `🔍 "Find clients interested in 4300V"`
     );
+  });
+
+  // Simple command handlers that don't need AI
+  bot.onText(/\/stats/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const clients = await storage.getAllClients();
+      const stats = {
+        total: clients.length,
+        requested_callback: clients.filter(c => c.status === 'requested_callback').length,
+        confirmed: clients.filter(c => c.status === 'confirmed').length,
+        sold: clients.filter(c => c.status === 'sold').length,
+        hesitant: clients.filter(c => c.status === 'hesitant').length,
+        shared_with_boutique: clients.filter(c => c.status === 'shared_with_boutique').length,
+        changed_mind: clients.filter(c => c.status === 'changed_mind').length,
+        vip: clients.filter(c => c.status === 'vip').length,
+      };
+      
+      let response = `📊 *CRM Statistics*\n\n`;
+      response += `Total Clients: ${stats.total}\n\n`;
+      response += `📞 Requested Callback: ${stats.requested_callback}\n`;
+      response += `✅ Confirmed: ${stats.confirmed}\n`;
+      response += `💰 Sold: ${stats.sold}\n`;
+      response += `🤔 Hesitant: ${stats.hesitant}\n`;
+      response += `🏪 Shared with Boutique: ${stats.shared_with_boutique}\n`;
+      response += `❌ Changed Mind: ${stats.changed_mind}\n`;
+      response += `⭐ VIP: ${stats.vip}`;
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      await bot?.sendMessage(chatId, '❌ Error fetching statistics');
+    }
+  });
+
+  bot.onText(/\/list_confirmed/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const clients = await storage.getAllClients();
+      const confirmed = clients.filter(c => c.status === 'confirmed').slice(0, 20);
+      
+      if (confirmed.length === 0) {
+        await bot?.sendMessage(chatId, 'No confirmed clients found.');
+        return;
+      }
+      
+      let response = `✅ *Confirmed Clients* (${confirmed.length}):\n\n`;
+      confirmed.forEach((client, idx) => {
+        response += `${idx + 1}. ${client.name}\n`;
+        if (client.phone) response += `   📞 ${client.phone}\n`;
+        response += `   Priority: ${client.priority}\n\n`;
+      });
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      await bot?.sendMessage(chatId, '❌ Error fetching clients');
+    }
+  });
+
+  bot.onText(/\/list_sold/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const clients = await storage.getAllClients();
+      const sold = clients.filter(c => c.status === 'sold').slice(0, 20);
+      
+      if (sold.length === 0) {
+        await bot?.sendMessage(chatId, 'No sold clients found.');
+        return;
+      }
+      
+      let response = `💰 *Sold Clients* (${sold.length}):\n\n`;
+      sold.forEach((client, idx) => {
+        response += `${idx + 1}. ${client.name}\n`;
+        if (client.phone) response += `   📞 ${client.phone}\n`;
+        response += `\n`;
+      });
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      await bot?.sendMessage(chatId, '❌ Error fetching clients');
+    }
+  });
+
+  bot.onText(/\/list_hesitant/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const clients = await storage.getAllClients();
+      const hesitant = clients.filter(c => c.status === 'hesitant').slice(0, 20);
+      
+      if (hesitant.length === 0) {
+        await bot?.sendMessage(chatId, 'No hesitant clients found.');
+        return;
+      }
+      
+      let response = `🤔 *Hesitant Clients* (${hesitant.length}):\n\n`;
+      hesitant.forEach((client, idx) => {
+        response += `${idx + 1}. ${client.name}\n`;
+        if (client.phone) response += `   📞 ${client.phone}\n`;
+        response += `   Priority: ${client.priority}\n\n`;
+      });
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      await bot?.sendMessage(chatId, '❌ Error fetching clients');
+    }
+  });
+
+  bot.onText(/\/list_callback/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const clients = await storage.getAllClients();
+      const callback = clients.filter(c => c.status === 'requested_callback').slice(0, 20);
+      
+      if (callback.length === 0) {
+        await bot?.sendMessage(chatId, 'No clients requesting callback.');
+        return;
+      }
+      
+      let response = `📞 *Clients Needing Callback* (${callback.length}):\n\n`;
+      callback.forEach((client, idx) => {
+        response += `${idx + 1}. ${client.name}\n`;
+        if (client.phone) response += `   📞 ${client.phone}\n`;
+        response += `   Priority: ${client.priority}\n\n`;
+      });
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      await bot?.sendMessage(chatId, '❌ Error fetching clients');
+    }
   });
 
   // Handle all text messages
@@ -137,6 +270,18 @@ Respond with a JSON object:
 
   } catch (error) {
     console.error('AI processing error:', error);
+    
+    // Handle OpenAI quota/rate limit errors
+    if ((error as any).status === 429 || (error as any).code === 'insufficient_quota') {
+      return '⚠️ *OpenAI API Quota Exceeded*\n\n' +
+        'The AI language processing feature requires OpenAI credits. Please check your OpenAI billing at: https://platform.openai.com/account/billing\n\n' +
+        'Until then, you can use these direct commands:\n' +
+        '• `/stats` - View CRM statistics\n' +
+        '• `/list_confirmed` - List confirmed clients\n' +
+        '• `/list_sold` - List sold clients\n' +
+        '• `/list_hesitant` - List hesitant clients';
+    }
+    
     throw error;
   }
 }
