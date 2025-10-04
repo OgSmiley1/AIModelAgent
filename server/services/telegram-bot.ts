@@ -1,12 +1,12 @@
 import TelegramBot from 'node-telegram-bot-api';
-import Groq from 'groq-sdk';
+import { GoogleGenAI } from '@google/genai';
 import { storage } from '../storage';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
 
 let bot: TelegramBot | null = null;
-let groq: Groq | null = null;
+let genai: GoogleGenAI | null = null;
 
 // Track last mentioned client per chat for pronoun resolution
 const chatContext = new Map<number, { lastClientId?: string, lastClientName?: string }>();
@@ -17,11 +17,11 @@ export function initializeTelegramBot() {
     return null;
   }
 
-  if (!GROQ_API_KEY) {
-    console.log('⚠️ GROQ_API_KEY not set - AI features disabled');
+  if (!GOOGLE_API_KEY) {
+    console.log('⚠️ GOOGLE_API_KEY not set - AI features disabled');
   } else {
-    groq = new Groq({ apiKey: GROQ_API_KEY });
-    console.log('🤖 Groq AI initialized successfully');
+    genai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY });
+    console.log('🤖 Google Gemini AI initialized successfully');
   }
 
   bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
@@ -54,7 +54,7 @@ export function initializeTelegramBot() {
       `/list_sold - List sold clients\n` +
       `/list_hesitant - List hesitant clients\n` +
       `/list_callback - List clients needing callback\n\n` +
-` *Natural Language (Powered by Groq AI):*\n` +
+` *Natural Language (Powered by Google Gemini):*\n` +
       `📋 "Show me all VIP clients"\n` +
       `👤 "Tell me about Client #108884411"\n` +
       `🔍 "Find client 108884411"\n` +
@@ -224,8 +224,8 @@ export function initializeTelegramBot() {
 }
 
 async function processNaturalLanguageRequest(message: string, chatId: number): Promise<string> {
-  if (!groq) {
-    return '⚠️ AI processing is not available. Please set up Groq API key.';
+  if (!genai) {
+    return '⚠️ AI processing is not available. Please set up Google API key.';
   }
 
   try {
@@ -251,13 +251,8 @@ Last mentioned client: ${context.lastClientName} (ID: ${context.lastClientId})
 When user says "his", "her", "them", "the client", "this client", or "the request", they mean: ${context.lastClientName}`;
     }
     
-    // Use Groq to understand the intent and extract parameters
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an AI assistant for Vacheron Constantin luxury watch CRM. Analyze user requests and execute them.
+    // Use Gemini to understand the intent and extract parameters
+    const systemPrompt = `You are an AI assistant for Vacheron Constantin luxury watch CRM. Analyze user requests and execute them.
 
 UNDERSTANDING REQUESTS:
 - "Find client 108884411" or "Tell me about 108884411" → Search by name/phone/ID
@@ -302,21 +297,21 @@ Respond ONLY with valid JSON:
     "scheduledFor": "ISO date string"
   },
   "response": "user-friendly message"
-}`
-        },
-        {
-          role: 'user',
-          content: message
-        }
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.3
-    });
+}`;
 
-    const result = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    const result = await genai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
+      contents: `${systemPrompt}\n\nUser request: ${message}`,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.3
+      }
+    });
+    
+    const parsed = JSON.parse(result.text || '{}');
     
     // Execute the action and update context
-    const response = await executeAction(result.action, result.params, result.response, clients, chatId);
+    const response = await executeAction(parsed.action, parsed.params, parsed.response, clients, chatId);
     
     return response;
 
