@@ -606,6 +606,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/clients/:id", async (req, res) => {
+    try {
+      const updates = req.body;
+      const existingClient = await storage.getClient(req.params.id);
+      
+      if (!existingClient) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      // Validate boutique associate name when status is shared_with_boutique
+      if (updates.status === 'shared_with_boutique') {
+        const associateName = updates.boutiqueSalesAssociateName || existingClient.boutiqueSalesAssociateName;
+        if (!associateName?.trim()) {
+          return res.status(400).json({ 
+            error: "Boutique Sales Associate Name is required when status is 'Shared with Boutique'" 
+          });
+        }
+      }
+      
+      // Normalize boutique associate name (trim whitespace)
+      if (updates.boutiqueSalesAssociateName) {
+        updates.boutiqueSalesAssociateName = updates.boutiqueSalesAssociateName.trim();
+      }
+
+      // Track status changes and update statusSince
+      if (updates.status && updates.status !== existingClient.status) {
+        updates.statusSince = new Date();
+        
+        // Log status change activity
+        await storage.logStatusChange(
+          req.params.id,
+          req.body.actorId || undefined,
+          existingClient.status || 'unknown',
+          updates.status
+        );
+
+        // Auto-close all future reminders if status is "sold"
+        if (updates.status === 'sold') {
+          const followUps = await storage.getFollowUpsByClient(req.params.id);
+          const now = new Date();
+          
+          for (const followUp of followUps) {
+            if (followUp.scheduledFor && followUp.scheduledFor > now && !followUp.completed) {
+              await storage.updateFollowUp(followUp.id, {
+                reminderState: 'dismissed',
+                completed: true,
+                completedAt: now
+              });
+              
+              await storage.logFollowUpAction(
+                req.params.id,
+                req.body.actorId || undefined,
+                'follow_up_auto_closed',
+                followUp.id,
+                { reason: 'Client marked as sold' }
+              );
+            }
+          }
+        }
+      }
+
+      // Log other significant field changes
+      const trackedFields = ['boutiqueSalesAssociateName', 'assignedSalespersonId', 'priority'] as const;
+      for (const field of trackedFields) {
+        if (updates[field] !== undefined && updates[field] !== (existingClient as any)[field]) {
+          await storage.logFieldEdit(
+            req.params.id,
+            req.body.actorId || undefined,
+            field,
+            (existingClient as any)[field],
+            updates[field]
+          );
+        }
+      }
+
+      const client = await storage.updateClient(req.params.id, updates);
+      websocketService.broadcastClientUpdate(client);
+      res.json(client);
+    } catch (error) {
+      console.error('Client update error:', error);
+      res.status(500).json({ error: "Failed to update client" });
+    }
+  });
+
   app.delete("/api/clients/:id", async (req, res) => {
     try {
       const success = await storage.deleteClient(req.params.id);
@@ -709,6 +793,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/followups", async (req, res) => {
     try {
+      // Convert date strings to Date objects for Zod validation
+      if (req.body.scheduledFor && typeof req.body.scheduledFor === 'string') {
+        req.body.scheduledFor = new Date(req.body.scheduledFor);
+      }
+      if (req.body.snoozedUntil && typeof req.body.snoozedUntil === 'string') {
+        req.body.snoozedUntil = new Date(req.body.snoozedUntil);
+      }
+      if (req.body.completedAt && typeof req.body.completedAt === 'string') {
+        req.body.completedAt = new Date(req.body.completedAt);
+      }
+      
       const followUpData = insertFollowUpSchema.parse(req.body);
       const followUp = await storage.createFollowUp(followUpData);
       res.json(followUp);
