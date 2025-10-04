@@ -5,6 +5,7 @@ import {
   type Message, type InsertMessage,
   type FollowUp, type InsertFollowUp,
   type Interaction, type InsertInteraction,
+  type Activity, type InsertActivity,
   type Document, type InsertDocument,
   type TripPlan, type InsertTripPlan,
   type AiConversation, type InsertAiConversation,
@@ -59,6 +60,14 @@ export interface IStorage {
   getInteraction(id: string): Promise<Interaction | undefined>;
   getInteractionsByClient(clientId: string): Promise<Interaction[]>;
   createInteraction(interaction: InsertInteraction): Promise<Interaction>;
+
+  // Activity operations (audit trail)
+  getActivity(id: string): Promise<Activity | undefined>;
+  getActivitiesByClient(clientId: string): Promise<Activity[]>;
+  createActivity(activity: InsertActivity): Promise<Activity>;
+  logStatusChange(clientId: string, actorId: string | undefined, from: string, to: string): Promise<Activity>;
+  logFieldEdit(clientId: string, actorId: string | undefined, field: string, from: any, to: any): Promise<Activity>;
+  logFollowUpAction(clientId: string, actorId: string | undefined, actionType: string, followUpId: string, details?: any): Promise<Activity>;
 
   // Document operations
   getDocument(id: string): Promise<Document | undefined>;
@@ -154,6 +163,7 @@ export class MemStorage implements IStorage {
   private messages: Map<string, Message> = new Map();
   private followUps: Map<string, FollowUp> = new Map();
   private interactions: Map<string, Interaction> = new Map();
+  private activities: Map<string, Activity> = new Map();
   private documents: Map<string, Document> = new Map();
   private tripPlans: Map<string, TripPlan> = new Map();
   private aiConversations: Map<string, AiConversation> = new Map();
@@ -465,6 +475,55 @@ export class MemStorage implements IStorage {
     }
 
     return interaction;
+  }
+
+  // Activity operations (audit trail)
+  async getActivity(id: string): Promise<Activity | undefined> {
+    return this.activities.get(id);
+  }
+
+  async getActivitiesByClient(clientId: string): Promise<Activity[]> {
+    return Array.from(this.activities.values())
+      .filter(activity => activity.clientId === clientId)
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
+  async createActivity(insertActivity: InsertActivity): Promise<Activity> {
+    const id = randomUUID();
+    const activity: Activity = {
+      ...insertActivity,
+      id,
+      createdAt: new Date(),
+    };
+    this.activities.set(id, activity);
+    return activity;
+  }
+
+  async logStatusChange(clientId: string, actorId: string | undefined, from: string, to: string): Promise<Activity> {
+    return this.createActivity({
+      clientId,
+      actorId: actorId || null,
+      type: 'status_changed',
+      payload: { field: 'status', from, to }
+    });
+  }
+
+  async logFieldEdit(clientId: string, actorId: string | undefined, field: string, from: any, to: any): Promise<Activity> {
+    return this.createActivity({
+      clientId,
+      actorId: actorId || null,
+      type: 'field_edited',
+      payload: { field, from, to }
+    });
+  }
+
+  async logFollowUpAction(clientId: string, actorId: string | undefined, actionType: string, followUpId: string, details?: any): Promise<Activity> {
+    return this.createActivity({
+      clientId,
+      actorId: actorId || null,
+      type: actionType,
+      payload: { followUpId, ...details }
+    });
   }
 
   // Document operations
