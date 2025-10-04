@@ -6,7 +6,7 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
 
 let bot: TelegramBot | null = null;
-let genai: GoogleGenAI | null = null;
+let genai: InstanceType<typeof GoogleGenAI> | null = null;
 
 // Track last mentioned client per chat for pronoun resolution
 const chatContext = new Map<number, { lastClientId?: string, lastClientName?: string }>();
@@ -252,6 +252,14 @@ When user says "his", "her", "them", "the client", "this client", or "the reques
     }
     
     // Use Gemini to understand the intent and extract parameters
+    const model = genai.getGenerativeModel({ 
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.3
+      }
+    });
+
     const systemPrompt = `You are an AI assistant for Vacheron Constantin luxury watch CRM. Analyze user requests and execute them.
 
 UNDERSTANDING REQUESTS:
@@ -299,16 +307,15 @@ Respond ONLY with valid JSON:
   "response": "user-friendly message"
 }`;
 
-    const result = await genai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: `${systemPrompt}\n\nUser request: ${message}`,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.3
+    const result = await model.generateContent([
+      {
+        role: 'user',
+        parts: [{ text: `${systemPrompt}\n\nUser request: ${message}` }]
       }
-    });
+    ]);
     
-    const parsed = JSON.parse(result.text || '{}');
+    const responseText = result.response.text();
+    const parsed = JSON.parse(responseText || '{}');
     
     // Execute the action and update context
     const response = await executeAction(parsed.action, parsed.params, parsed.response, clients, chatId);
