@@ -54,6 +54,7 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
     timeframe: client.timeframe || "medium_term",
     location: client.location || "",
     decisionMaker: client.decisionMaker || false,
+    boutiqueSalesAssociateName: client.boutiqueSalesAssociateName || "",
   });
 
   const queryClient = useQueryClient();
@@ -98,6 +99,7 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
       timeframe: client.timeframe || "medium_term",
       location: client.location || "",
       decisionMaker: client.decisionMaker || false,
+      boutiqueSalesAssociateName: client.boutiqueSalesAssociateName || "",
     });
     setIsEditing(false);
   };
@@ -112,6 +114,12 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
       case 'vip': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'active': return 'bg-green-100 text-green-800 border-green-200';
       case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'sold': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'hesitant': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'requested_callback': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+      case 'changed_mind': return 'bg-rose-100 text-rose-800 border-rose-200';
+      case 'shared_with_boutique': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
       default: return 'bg-blue-100 text-blue-800 border-blue-200';
     }
   };
@@ -146,6 +154,24 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
   const conversionProbability = (client.conversionProbability || 0) * 100;
   const engagementLevel = client.engagementLevel || 'low';
 
+  // Calculate status duration
+  const getStatusDuration = () => {
+    if (!client.statusSince) return null;
+    const now = new Date();
+    const statusDate = new Date(client.statusSince);
+    const diffMs = now.getTime() - statusDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1 day';
+    if (diffDays < 7) return `${diffDays} days`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months`;
+    return `${Math.floor(diffDays / 365)} years`;
+  };
+
+  const statusDuration = getStatusDuration();
+
   return (
     <Card className="hover:shadow-md transition-shadow duration-200" data-testid={`client-card-${client.id}`}>
       <CardHeader className="pb-3">
@@ -165,8 +191,8 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
                 <CardTitle className="text-lg">{client.name}</CardTitle>
               )}
               <div className="flex items-center space-x-2 mt-1">
-                <Badge className={getStatusColor(client.status)}>
-                  {client.status}
+                <Badge className={getStatusColor(client.status)} data-testid="client-status-badge">
+                  {client.status.replace(/_/g, ' ')}
                 </Badge>
                 <Badge className={getPriorityColor(client.priority)}>
                   {client.priority}
@@ -178,6 +204,12 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
                   </Badge>
                 )}
               </div>
+              {statusDuration && (
+                <div className="text-xs text-muted-foreground mt-1" data-testid="status-duration">
+                  <Clock size={12} className="inline mr-1" />
+                  In {client.status.replace(/_/g, ' ')} for {statusDuration}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -365,8 +397,8 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
           {isEditing ? (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <Select value={editData.status} onValueChange={(value) => setEditData({ ...editData, status: value as 'prospect' | 'active' | 'inactive' | 'vip' })}>
-                  <SelectTrigger>
+                <Select value={editData.status} onValueChange={(value) => setEditData({ ...editData, status: value })}>
+                  <SelectTrigger data-testid="status-dropdown">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -374,6 +406,12 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="vip">VIP</SelectItem>
+                    <SelectItem value="requested_callback">Requested Callback</SelectItem>
+                    <SelectItem value="changed_mind">Changed Mind</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="sold">Sold</SelectItem>
+                    <SelectItem value="hesitant">Hesitant</SelectItem>
+                    <SelectItem value="shared_with_boutique">Shared with Boutique</SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -390,6 +428,21 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
                   </SelectContent>
                 </Select>
               </div>
+
+              {editData.status === 'shared_with_boutique' && (
+                <div className="p-3 border border-indigo-200 bg-indigo-50 dark:bg-indigo-950 rounded-md">
+                  <label className="text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-1 block">
+                    Boutique Sales Associate Name *
+                  </label>
+                  <Input
+                    placeholder="Enter associate name"
+                    value={editData.boutiqueSalesAssociateName}
+                    onChange={(e) => setEditData({ ...editData, boutiqueSalesAssociateName: e.target.value })}
+                    data-testid="boutique-associate-input"
+                    className="bg-white dark:bg-gray-800"
+                  />
+                </div>
+              )}
               
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center space-x-2">
@@ -430,6 +483,16 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
             </div>
           ) : (
             <div className="space-y-2">
+              {client.status === 'shared_with_boutique' && client.boutiqueSalesAssociateName && (
+                <div className="p-3 border border-indigo-200 bg-indigo-50 dark:bg-indigo-950 rounded-md">
+                  <div className="text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-1">
+                    Boutique Sales Associate
+                  </div>
+                  <div className="text-sm font-medium" data-testid="boutique-associate-display">
+                    {client.boutiqueSalesAssociateName}
+                  </div>
+                </div>
+              )}
               {client.budget && client.budget > 0 && (
                 <div className="flex items-center text-sm">
                   <DollarSign size={16} className="mr-2 text-muted-foreground" />
