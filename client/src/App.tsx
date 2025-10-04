@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ReminderNotifications } from "@/components/reminders/reminder-notifications";
 import Dashboard from "@/pages/dashboard";
 import WhatsApp from "@/pages/whatsapp";
 import Clients from "@/pages/clients-working";
@@ -43,6 +44,7 @@ function App() {
       <TooltipProvider>
         <div className="min-h-screen bg-background text-foreground font-sans">
           <Toaster />
+          <ReminderNotifications />
           <Router />
         </div>
       </TooltipProvider>
