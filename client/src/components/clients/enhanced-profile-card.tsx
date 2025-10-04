@@ -33,12 +33,14 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import type { ClientProfileData } from "@/types";
 import { FollowUpsSection } from "./follow-ups-section";
+import { useToast } from "@/hooks/use-toast";
 
 interface EnhancedProfileCardProps {
   client: ClientProfileData;
 }
 
 export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdatingScore, setIsUpdatingScore] = useState(false);
   const [editData, setEditData] = useState({
@@ -82,6 +84,16 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
   });
 
   const handleSave = () => {
+    // Validate boutique associate name when status is shared_with_boutique
+    if (editData.status === 'shared_with_boutique' && !editData.boutiqueSalesAssociateName?.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Boutique Sales Associate Name is required when status is 'Shared with Boutique'",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     updateClientMutation.mutate(editData);
   };
 

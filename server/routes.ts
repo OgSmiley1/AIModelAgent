@@ -535,10 +535,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate boutique associate name when status is shared_with_boutique
-      if (updates.status === 'shared_with_boutique' && !updates.boutiqueSalesAssociateName) {
+      if (updates.status === 'shared_with_boutique' && !updates.boutiqueSalesAssociateName?.trim()) {
         return res.status(400).json({ 
           error: "Boutique Sales Associate Name is required when status is 'Shared with Boutique'" 
         });
+      }
+      
+      // Normalize boutique associate name (trim whitespace)
+      if (updates.boutiqueSalesAssociateName) {
+        updates.boutiqueSalesAssociateName = updates.boutiqueSalesAssociateName.trim();
       }
 
       // Track status changes and update statusSince

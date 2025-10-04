@@ -224,7 +224,7 @@ export default function AIAgentChat() {
   };
 
   const handleAnalyzeClient = () => {
-    if (!selectedClient) {
+    if (!selectedClient || selectedClient === 'none') {
       toast({
         title: "No Client Selected",
         description: "Please select a client to analyze.",
@@ -250,7 +250,7 @@ export default function AIAgentChat() {
     }
   };
 
-  const selectedClientData = selectedClient ? clients.find(c => c.id === selectedClient) : null;
+  const selectedClientData = (selectedClient && selectedClient !== 'none') ? clients.find(c => c.id === selectedClient) : null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -283,7 +283,7 @@ export default function AIAgentChat() {
                       <SelectValue placeholder="Select client for context" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No client selected</SelectItem>
+                      <SelectItem value="none">No client selected</SelectItem>
                       {clients.map(client => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.name} ({client.status})
@@ -306,7 +306,7 @@ export default function AIAgentChat() {
                 
                 <Button 
                   onClick={handleAnalyzeClient}
-                  disabled={!selectedClient || analyzeClientMutation.isPending}
+                  disabled={!selectedClient || selectedClient === 'none' || analyzeClientMutation.isPending}
                   variant="outline"
                   size="sm"
                 >
