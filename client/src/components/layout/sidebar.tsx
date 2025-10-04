@@ -101,10 +101,10 @@ const navigation = [
     badge: "NEW"
   },
   { 
-    name: "Client Visits", 
-    href: "/trip-planner", 
-    icon: Route,
-    description: "Plan and schedule client meetings and visits",
+    name: "Client Status", 
+    href: "/client-status", 
+    icon: Users,
+    description: "View and manage all client statuses and profiles",
     category: "Tools",
     priority: 9
   },

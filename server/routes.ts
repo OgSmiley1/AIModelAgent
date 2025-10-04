@@ -47,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const challenge = req.query["hub.challenge"];
 
     const verified = whatsAppService.verifyWebhook(mode as string, token as string, challenge as string);
-    if (verified) {
+    if (verified === true) {
       res.status(200).send(challenge);
     } else {
       res.status(403).send("Forbidden");
@@ -584,14 +584,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Log other significant field changes
-      const trackedFields = ['boutiqueSalesAssociateName', 'assignedSalespersonId', 'priority'];
+      const trackedFields = ['boutiqueSalesAssociateName', 'assignedSalespersonId', 'priority'] as const;
       for (const field of trackedFields) {
-        if (updates[field] !== undefined && updates[field] !== existingClient[field]) {
+        if (updates[field] !== undefined && updates[field] !== (existingClient as any)[field]) {
           await storage.logFieldEdit(
             req.params.id,
             req.body.actorId || undefined,
             field,
-            existingClient[field],
+            (existingClient as any)[field],
             updates[field]
           );
         }

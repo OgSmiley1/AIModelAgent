@@ -11,7 +11,7 @@ import Forecasting from "@/pages/forecasting";
 import AIAgentChat from "@/pages/ai-agent-chat";
 import AdvancedAI from "@/pages/advanced-ai";
 import Documents from "@/pages/documents";
-import TripPlanner from "@/pages/trip-planner";
+import ClientStatus from "@/pages/client-status";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import ExcelAnalyzer from "@/pages/excel-analyzer";
@@ -29,7 +29,7 @@ function Router() {
       <Route path="/ai-agent" component={AIAgentChat} />
       <Route path="/advanced-ai" component={AdvancedAI} />
       <Route path="/documents" component={Documents} />
-      <Route path="/trip-planner" component={TripPlanner} />
+      <Route path="/client-status" component={ClientStatus} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/excel-analyzer" component={ExcelAnalyzer} />
       <Route path="/settings" component={Settings} />
