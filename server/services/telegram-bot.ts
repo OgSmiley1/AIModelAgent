@@ -252,14 +252,6 @@ When user says "his", "her", "them", "the client", "this client", or "the reques
     }
     
     // Use Gemini to understand the intent and extract parameters
-    const model = genai.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.3
-      }
-    });
-
     const systemPrompt = `You are an AI assistant for Vacheron Constantin luxury watch CRM. Analyze user requests and execute them.
 
 UNDERSTANDING REQUESTS:
@@ -307,14 +299,16 @@ Respond ONLY with valid JSON:
   "response": "user-friendly message"
 }`;
 
-    const result = await model.generateContent([
-      {
-        role: 'user',
-        parts: [{ text: `${systemPrompt}\n\nUser request: ${message}` }]
+    const result = await genai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
+      contents: `${systemPrompt}\n\nUser request: ${message}`,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.3
       }
-    ]);
+    });
     
-    const responseText = result.response.text();
+    const responseText = result.text;
     const parsed = JSON.parse(responseText || '{}');
     
     // Execute the action and update context
