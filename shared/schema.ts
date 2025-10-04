@@ -41,12 +41,17 @@ export const clients = pgTable("clients", {
   phone: text("phone"),
   email: text("email"),
   whatsappNumber: text("whatsapp_number"),
-  status: text("status").default("prospect"), // prospect, active, inactive, vip
+  status: text("status").default("prospect"), // prospect, active, inactive, vip, requested_callback, changed_mind, confirmed, sold, hesitant, shared_with_boutique
+  statusSince: timestamp("status_since").defaultNow(), // For status duration counter
+  boutiqueSalesAssociateName: text("boutique_sales_associate_name"), // Required when status = shared_with_boutique
+  assignedSalespersonId: varchar("assigned_salesperson_id").references(() => users.id), // Assigned sales associate
   priority: text("priority").default("medium"), // low, medium, high, critical, vip
   interests: text("interests"),
   preferences: jsonb("preferences"),
   behaviorPatterns: jsonb("behavior_patterns"),
   lastInteraction: timestamp("last_interaction"),
+  lastTouchChannel: text("last_touch_channel"), // whatsapp, call, email, in_boutique, other
+  nextTouchChannel: text("next_touch_channel"), // whatsapp, call, email, in_boutique, other
   totalInteractions: integer("total_interactions").default(0),
   conversionStage: text("conversion_stage").default("awareness"), // awareness, interest, consideration, intent, purchase
   lifetimeValue: real("lifetime_value").default(0),
@@ -109,13 +114,17 @@ export const followUps = pgTable("follow_ups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").references(() => clients.id),
   type: text("type").notNull(), // reminder, call, email, meeting, task
+  channel: text("channel").default("call"), // whatsapp, call, email, in_boutique, other
   title: text("title").notNull(),
   description: text("description"),
   scheduledFor: timestamp("scheduled_for").notNull(),
+  reminderState: text("reminder_state").default("scheduled"), // scheduled, snoozed, completed, dismissed
+  snoozedUntil: timestamp("snoozed_until"), // When snoozed, reschedule to this time
   completed: boolean("completed").default(false),
   completedAt: timestamp("completed_at"),
   priority: text("priority").default("medium"),
   automatedAction: text("automated_action"), // send_message, create_task, notify_team
+  createdBy: varchar("created_by").references(() => users.id), // Who created this follow-up
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -132,6 +141,16 @@ export const interactions = pgTable("interactions", {
   value: real("value"), // business value score
   metadata: jsonb("metadata"),
   timestamp: timestamp("timestamp").defaultNow(),
+});
+
+// Activities table - immutable audit trail for all client actions
+export const activities = pgTable("activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id),
+  actorId: varchar("actor_id").references(() => users.id), // Who performed the action
+  type: text("type").notNull(), // status_changed, field_edited, follow_up_created, reminder_fired, reminder_snoozed, reminder_dismissed, follow_up_completed, auto_ingest, system
+  payload: jsonb("payload").notNull(), // Details: old_value, new_value, field, etc.
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Documents table for file management
@@ -271,6 +290,11 @@ export const insertFollowUpSchema = createInsertSchema(followUps).omit({
 export const insertInteractionSchema = createInsertSchema(interactions).omit({
   id: true,
   timestamp: true,
+});
+
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertDocumentSchema = createInsertSchema(documents).omit({
@@ -426,6 +450,9 @@ export type FollowUp = typeof followUps.$inferSelect;
 
 export type InsertInteraction = z.infer<typeof insertInteractionSchema>;
 export type Interaction = typeof interactions.$inferSelect;
+
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type Activity = typeof activities.$inferSelect;
 
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documents.$inferSelect;
