@@ -212,7 +212,8 @@ export function initializeTelegramBot() {
         disable_web_page_preview: true
       });
     } catch (error) {
-      console.error('Telegram bot error:', error);
+      console.error('❌ [Telegram Bot] Top-level error:', error);
+      console.error('❌ [Telegram Bot] Error stack:', (error as any).stack);
       await bot?.sendMessage(
         chatId,
         `❌ Sorry, I encountered an error processing your request. Please try again or use /help for examples.`
@@ -299,17 +300,27 @@ Respond ONLY with valid JSON:
   "response": "user-friendly message"
 }`;
 
+    console.log('🔍 [Telegram Bot] Processing message:', message);
+    console.log('🔍 [Telegram Bot] Calling Gemini API...');
+    
     const result = await genai.models.generateContent({
       model: 'gemini-2.0-flash-exp',
-      contents: `${systemPrompt}\n\nUser request: ${message}`,
+      contents: message,
       config: {
+        systemInstruction: systemPrompt,
         responseMimeType: 'application/json',
         temperature: 0.3
       }
     });
     
+    console.log('✅ [Telegram Bot] Gemini API response received');
+    console.log('📄 [Telegram Bot] Response object:', JSON.stringify(result, null, 2));
+    
     const responseText = result.text;
+    console.log('📝 [Telegram Bot] Response text:', responseText);
+    
     const parsed = JSON.parse(responseText || '{}');
+    console.log('🎯 [Telegram Bot] Parsed JSON:', JSON.stringify(parsed, null, 2));
     
     // Execute the action and update context
     const response = await executeAction(parsed.action, parsed.params, parsed.response, clients, chatId);
@@ -317,7 +328,12 @@ Respond ONLY with valid JSON:
     return response;
 
   } catch (error) {
-    console.error('AI processing error:', error);
+    console.error('❌ [Telegram Bot] AI processing error:', error);
+    console.error('❌ [Telegram Bot] Error details:', {
+      message: (error as any).message,
+      stack: (error as any).stack,
+      response: (error as any).response?.data
+    });
     
     // Handle API errors
     if ((error as any).status === 429 || (error as any).code === 'rate_limit_exceeded') {
