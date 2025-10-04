@@ -528,10 +528,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/clients/:id", async (req, res) => {
     try {
       const updates = req.body;
+      const existingClient = await storage.getClient(req.params.id);
+      
+      if (!existingClient) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      // Validate boutique associate name when status is shared_with_boutique
+      if (updates.status === 'shared_with_boutique' && !updates.boutiqueSalesAssociateName) {
+        return res.status(400).json({ 
+          error: "Boutique Sales Associate Name is required when status is 'Shared with Boutique'" 
+        });
+      }
+
+      // Track status changes and update statusSince
+      if (updates.status && updates.status !== existingClient.status) {
+        updates.statusSince = new Date();
+        
+        // Log status change activity
+        await storage.logStatusChange(
+          req.params.id,
+          req.body.actorId || undefined,
+          existingClient.status || 'unknown',
+          updates.status
+        );
+
+        // Auto-close all future reminders if status is "sold"
+        if (updates.status === 'sold') {
+          const followUps = await storage.getFollowUpsByClient(req.params.id);
+          const now = new Date();
+          
+          for (const followUp of followUps) {
+            if (followUp.scheduledFor && followUp.scheduledFor > now && !followUp.completed) {
+              await storage.updateFollowUp(followUp.id, {
+                reminderState: 'dismissed',
+                completed: true,
+                completedAt: now
+              });
+              
+              await storage.logFollowUpAction(
+                req.params.id,
+                req.body.actorId || undefined,
+                'follow_up_auto_closed',
+                followUp.id,
+                { reason: 'Client marked as sold' }
+              );
+            }
+          }
+        }
+      }
+
+      // Log other significant field changes
+      const trackedFields = ['boutiqueSalesAssociateName', 'assignedSalespersonId', 'priority'];
+      for (const field of trackedFields) {
+        if (updates[field] !== undefined && updates[field] !== existingClient[field]) {
+          await storage.logFieldEdit(
+            req.params.id,
+            req.body.actorId || undefined,
+            field,
+            existingClient[field],
+            updates[field]
+          );
+        }
+      }
+
       const client = await storage.updateClient(req.params.id, updates);
       websocketService.broadcastClientUpdate(client);
       res.json(client);
     } catch (error) {
+      console.error('Client update error:', error);
       res.status(500).json({ error: "Failed to update client" });
     }
   });
@@ -545,6 +610,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete client" });
+    }
+  });
+
+  // Activity routes (audit trail)
+  app.get("/api/clients/:id/activities", async (req, res) => {
+    try {
+      const activities = await storage.getActivitiesByClient(req.params.id);
+      res.json(activities);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch activities" });
     }
   });
 
@@ -647,6 +722,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(followUp);
     } catch (error) {
       res.status(500).json({ error: "Failed to update follow-up" });
+    }
+  });
+
+  // Follow-up action routes
+  app.put("/api/followups/:id/snooze", async (req, res) => {
+    try {
+      const { minutes = 15, actorId } = req.body;
+      const followUp = await storage.getFollowUp(req.params.id);
+      
+      if (!followUp) {
+        return res.status(404).json({ error: "Follow-up not found" });
+      }
+
+      const snoozedUntil = new Date(Date.now() + minutes * 60 * 1000);
+      const updated = await storage.updateFollowUp(req.params.id, {
+        reminderState: 'snoozed',
+        snoozedUntil
+      });
+
+      if (followUp.clientId) {
+        await storage.logFollowUpAction(
+          followUp.clientId,
+          actorId,
+          'reminder_snoozed',
+          req.params.id,
+          { snoozedByMinutes: minutes, snoozedUntil }
+        );
+      }
+
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to snooze follow-up" });
+    }
+  });
+
+  app.put("/api/followups/:id/dismiss", async (req, res) => {
+    try {
+      const { actorId } = req.body;
+      const followUp = await storage.getFollowUp(req.params.id);
+      
+      if (!followUp) {
+        return res.status(404).json({ error: "Follow-up not found" });
+      }
+
+      const updated = await storage.updateFollowUp(req.params.id, {
+        reminderState: 'dismissed',
+        completed: false
+      });
+
+      if (followUp.clientId) {
+        await storage.logFollowUpAction(
+          followUp.clientId,
+          actorId,
+          'reminder_dismissed',
+          req.params.id
+        );
+      }
+
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to dismiss follow-up" });
+    }
+  });
+
+  app.put("/api/followups/:id/complete", async (req, res) => {
+    try {
+      const { actorId } = req.body;
+      const followUp = await storage.getFollowUp(req.params.id);
+      
+      if (!followUp) {
+        return res.status(404).json({ error: "Follow-up not found" });
+      }
+
+      const now = new Date();
+      const updated = await storage.updateFollowUp(req.params.id, {
+        reminderState: 'completed',
+        completed: true,
+        completedAt: now
+      });
+
+      if (followUp.clientId) {
+        await storage.logFollowUpAction(
+          followUp.clientId,
+          actorId,
+          'follow_up_completed',
+          req.params.id
+        );
+
+        // Update client's last touch
+        await storage.updateClient(followUp.clientId, {
+          lastInteraction: now,
+          lastTouchChannel: followUp.channel || 'call'
+        });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to complete follow-up" });
     }
   });
 
