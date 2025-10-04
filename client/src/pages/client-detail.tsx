@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { EnhancedProfileCard } from "@/components/clients/enhanced-profile-card";
 import { FollowUpsSection } from "@/components/clients/follow-ups-section";
+import { ActivityTimeline } from "@/components/clients/activity-timeline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import {
   Star,
   Brain,
   Target,
+  AlertTriangle,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -240,6 +242,9 @@ export default function ClientDetailPage() {
 
               {/* Follow-ups Section */}
               <FollowUpsSection clientId={client.id} clientName={client.name} />
+
+              {/* Activity Timeline */}
+              <ActivityTimeline clientId={client.id} />
             </div>
 
             {/* Right Column - Quick Actions & Stats */}

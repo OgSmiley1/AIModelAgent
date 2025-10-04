@@ -397,7 +397,7 @@ export function EnhancedProfileCard({ client }: EnhancedProfileCardProps) {
           {isEditing ? (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <Select value={editData.status} onValueChange={(value) => setEditData({ ...editData, status: value })}>
+                <Select value={editData.status} onValueChange={(value) => setEditData({ ...editData, status: value as any })}>
                   <SelectTrigger data-testid="status-dropdown">
                     <SelectValue />
                   </SelectTrigger>

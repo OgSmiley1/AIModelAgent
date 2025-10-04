@@ -49,7 +49,7 @@ export interface ClientProfileData {
   phone?: string;
   email?: string;
   whatsappNumber?: string;
-  status: 'prospect' | 'active' | 'inactive' | 'vip';
+  status: 'prospect' | 'active' | 'inactive' | 'vip' | 'requested_callback' | 'changed_mind' | 'confirmed' | 'sold' | 'hesitant' | 'shared_with_boutique';
   priority: 'low' | 'medium' | 'high' | 'critical' | 'vip';
   interests?: string;
   lastInteraction?: Date;
@@ -76,6 +76,13 @@ export interface ClientProfileData {
   budget?: number;
   timeframe?: 'immediate' | 'short_term' | 'medium_term' | 'long_term';
   decisionMaker?: boolean;
+  
+  // Client Status Management fields
+  statusSince?: Date;
+  boutiqueSalesAssociateName?: string;
+  assignedSalespersonId?: string;
+  lastTouchChannel?: string;
+  nextTouchChannel?: string;
   
   // Tracking timestamps
   lastScoreUpdate?: Date;
