@@ -309,6 +309,15 @@ Respond ONLY with valid JSON:
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'object',
+          properties: {
+            action: { type: 'string' },
+            params: { type: 'object' },
+            response: { type: 'string' }
+          },
+          required: ['action', 'response']
+        },
         temperature: 0.3
       }
     });
@@ -316,10 +325,15 @@ Respond ONLY with valid JSON:
     console.log('✅ [Telegram Bot] Gemini API response received');
     console.log('📄 [Telegram Bot] Response object:', JSON.stringify(result, null, 2));
     
-    const responseText = result.text;
+    // Safely access the response text
+    const responseText = result.text || '';
     console.log('📝 [Telegram Bot] Response text:', responseText);
     
-    const parsed = JSON.parse(responseText || '{}');
+    if (!responseText) {
+      throw new Error('Empty response from Gemini API');
+    }
+    
+    const parsed = JSON.parse(responseText);
     console.log('🎯 [Telegram Bot] Parsed JSON:', JSON.stringify(parsed, null, 2));
     
     // Execute the action and update context
