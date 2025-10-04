@@ -8,6 +8,9 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 let bot: TelegramBot | null = null;
 let groq: Groq | null = null;
 
+// Track last mentioned client per chat for pronoun resolution
+const chatContext = new Map<number, { lastClientId?: string, lastClientName?: string }>();
+
 export function initializeTelegramBot() {
   if (!TELEGRAM_BOT_TOKEN) {
     console.log('⚠️ TELEGRAM_BOT_TOKEN not set - Telegram bot disabled');
@@ -200,8 +203,8 @@ export function initializeTelegramBot() {
       // Send typing indicator
       await bot?.sendChatAction(chatId, 'typing');
 
-      // Process the request using AI
-      const response = await processNaturalLanguageRequest(userMessage);
+      // Process the request using AI with chat context
+      const response = await processNaturalLanguageRequest(userMessage, chatId);
 
       // Send response
       await bot?.sendMessage(chatId, response, {
@@ -220,7 +223,7 @@ export function initializeTelegramBot() {
   return bot;
 }
 
-async function processNaturalLanguageRequest(message: string): Promise<string> {
+async function processNaturalLanguageRequest(message: string, chatId: number): Promise<string> {
   if (!groq) {
     return '⚠️ AI processing is not available. Please set up Groq API key.';
   }
@@ -229,6 +232,9 @@ async function processNaturalLanguageRequest(message: string): Promise<string> {
     // Get all clients for context
     const clients = await storage.getAllClients();
     
+    // Get or initialize chat context
+    const context = chatContext.get(chatId) || {};
+    
     // Build a sample of client data to help AI understand the structure
     const sampleClients = clients.slice(0, 3).map(c => ({
       name: c.name,
@@ -236,6 +242,14 @@ async function processNaturalLanguageRequest(message: string): Promise<string> {
       status: c.status,
       id: c.id
     }));
+    
+    // Build context message for AI
+    let contextInfo = '';
+    if (context.lastClientId && context.lastClientName) {
+      contextInfo = `\n\nCONVERSATION CONTEXT:
+Last mentioned client: ${context.lastClientName} (ID: ${context.lastClientId})
+When user says "his", "her", "them", "the client", "this client", or "the request", they mean: ${context.lastClientName}`;
+    }
     
     // Use Groq to understand the intent and extract parameters
     const completion = await groq.chat.completions.create({
@@ -247,8 +261,9 @@ async function processNaturalLanguageRequest(message: string): Promise<string> {
 
 UNDERSTANDING REQUESTS:
 - "Find client 108884411" or "Tell me about 108884411" → Search by name/phone/ID
-- "Update his/her status to X" → Update client status
-- "Close the request" → Update status to changed_mind
+- "Update his/her status to X" → Update the LAST MENTIONED client's status
+- "Close the request" or "Close his/her request" → Update LAST MENTIONED client to changed_mind
+- Pronouns (his/her/them/the client) ALWAYS refer to the last mentioned client
 
 AVAILABLE ACTIONS:
 1. QUERY_CLIENTS: Search/filter/list clients by status, name, or criteria
@@ -271,13 +286,13 @@ SEARCH LOGIC:
 - When user says "client 108884411", search for clients where name contains "108884411"
 
 Total clients: ${clients.length}
-Sample data: ${JSON.stringify(sampleClients, null, 2)}
+Sample data: ${JSON.stringify(sampleClients, null, 2)}${contextInfo}
 
 Respond ONLY with valid JSON:
 {
   "action": "QUERY_CLIENTS|GET_CLIENT|UPDATE_CLIENT|CREATE_FOLLOWUP|STATS",
   "params": {
-    "clientId": "...",
+    "clientId": "ID from context if using pronouns",
     "name": "partial or full client name",
     "status": "...",
     "search": "search term",
@@ -300,8 +315,10 @@ Respond ONLY with valid JSON:
 
     const result = JSON.parse(completion.choices[0]?.message?.content || '{}');
     
-    // Execute the action
-    return await executeAction(result.action, result.params, result.response, clients);
+    // Execute the action and update context
+    const response = await executeAction(result.action, result.params, result.response, clients, chatId);
+    
+    return response;
 
   } catch (error) {
     console.error('AI processing error:', error);
@@ -319,7 +336,8 @@ async function executeAction(
   action: string,
   params: any,
   aiResponse: string,
-  clients: any[]
+  clients: any[],
+  chatId: number
 ): Promise<string> {
   try {
     switch (action) {
@@ -374,6 +392,12 @@ async function executeAction(
         if (!client) {
           return `❌ Client not found. Try searching with name, phone, or number.`;
         }
+        
+        // Update chat context with this client
+        chatContext.set(chatId, {
+          lastClientId: client.id,
+          lastClientName: client.name
+        });
         
         let response = `👤 *${client.name}*\n\n`;
         response += `📊 Status: ${client.status?.replace(/_/g, ' ')}\n`;
