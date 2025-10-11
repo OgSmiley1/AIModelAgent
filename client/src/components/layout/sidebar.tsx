@@ -32,10 +32,10 @@ const navigation = [
     name: "Client Registry", 
     href: "/clients", 
     icon: Users,
-    description: "Manage 281 client records with lead scoring",
+    description: "Manage 287 client records with lead scoring",
     category: "Core", 
     priority: 3,
-    badge: "281"
+    badge: "287"
   },
   { 
     name: "Sales Intelligence", 
