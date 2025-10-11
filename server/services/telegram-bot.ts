@@ -303,13 +303,12 @@ Respond ONLY with valid JSON:
     console.log('🔍 [Telegram Bot] Processing message:', message);
     console.log('🔍 [Telegram Bot] Calling Gemini API...');
     
+    const prompt = `${systemPrompt}\n\nUser request: ${message}`;
+    
     const result = await genai.models.generateContent({
       model: 'gemini-2.0-flash-exp',
-      contents: [{
-        parts: [{ text: message }]
-      }],
+      contents: prompt,
       config: {
-        systemInstruction: systemPrompt,
         responseMimeType: 'application/json',
         temperature: 0.3
       }
