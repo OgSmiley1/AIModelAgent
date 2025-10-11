@@ -334,7 +334,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import Maaz Clients Route
+  // Import Excel Data Route (Vacheron Tracker)
+  app.post("/api/clients/import-excel", async (req, res) => {
+    try {
+      console.log("📊 Starting Excel data import from Vacheron tracker...");
+      
+      const { importExcelData } = await import('./import-excel');
+      const result = await importExcelData(storage);
+      
+      console.log(`✅ Excel import complete: ${result.imported} clients, ${result.appointments} appointments`);
+      
+      res.json({
+        success: true,
+        message: "Excel data imported successfully",
+        imported: result.imported,
+        appointments: result.appointments,
+        errors: result.errors
+      });
+      
+    } catch (error) {
+      console.error('❌ Excel import failed:', error);
+      res.status(500).json({
+        success: false,
+        message: "Excel import failed",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Import Maaz Clients Route (Legacy - keeping for reference)
   app.post("/api/clients/import-maaz", async (req, res) => {
     try {
       console.log("🎯 Starting Maaz client import...");

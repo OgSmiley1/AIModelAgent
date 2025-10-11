@@ -40,34 +40,33 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  // 🚨 CRITICAL FIX: Auto-import client data on startup with retry mechanism
-  console.log("🎯 Auto-importing client data with retry mechanism...");
+  // 🚨 Auto-import Excel data on startup
+  console.log("📊 Auto-importing Excel data with retry mechanism...");
   
-  const importClientData = async () => {
+  const importExcelData = async () => {
     try {
       const fs = await import('fs');
-      const path = await import('path');
-      const clientDataPath = path.resolve('maaz_clients_detailed.json');
+      const excelPath = 'attached_assets/Vacheron_Constantin V1 tracker_1760191439139.xlsm';
       
-      if (fs.existsSync(clientDataPath)) {
-        console.log("📄 Client data file found, importing...");
+      if (fs.existsSync(excelPath)) {
+        console.log("📄 Excel file found, importing client and appointment data...");
         
         // Give server time to fully start
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Import client data with retry mechanism
+        // Import Excel data with retry mechanism
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
-            console.log(`🔄 Import attempt ${attempt}/3...`);
+            console.log(`🔄 Excel import attempt ${attempt}/3...`);
             
-            const response = await fetch('http://localhost:5000/api/clients/import-maaz', {
+            const response = await fetch('http://localhost:5000/api/clients/import-excel', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' }
             });
             
             if (response?.ok) {
               const result = await response.json();
-              console.log(`✅ SUCCESS: ${result.imported || 281} clients imported successfully!`);
+              console.log(`✅ SUCCESS: ${result.imported} clients and ${result.appointments} appointments imported!`);
               return true;
             } else {
               console.log(`⚠️ Import attempt ${attempt} failed, retrying...`);
@@ -85,17 +84,17 @@ app.use((req, res, next) => {
         console.log("❌ All import attempts failed - manual intervention required");
         return false;
       } else {
-        console.log("⚠️ Client data file not found");
+        console.log("⚠️ Excel file not found");
         return false;
       }
     } catch (error) {
-      console.log("⚠️ Auto-import system error:", (error as Error).message);
+      console.log("⚠️ Excel auto-import error:", (error as Error).message);
       return false;
     }
   };
   
   // Run import in background after server starts
-  setTimeout(importClientData, 3000);
+  setTimeout(importExcelData, 3000);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
