@@ -194,12 +194,23 @@ export function initializeTelegramBot() {
 
   // Handle all text messages
   bot.on('message', async (msg) => {
-    if (msg.text?.startsWith('/')) return; // Skip commands
+    console.log('📨 [Telegram Bot] Message received:', {
+      chatId: msg.chat.id,
+      text: msg.text,
+      from: msg.from?.username || msg.from?.first_name
+    });
+    
+    if (msg.text?.startsWith('/')) {
+      console.log('⚡ [Telegram Bot] Skipping - this is a command');
+      return; // Skip commands
+    }
 
     const chatId = msg.chat.id;
     const userMessage = msg.text || '';
 
     try {
+      console.log('🤖 [Telegram Bot] Processing natural language message:', userMessage);
+      
       // Send typing indicator
       await bot?.sendChatAction(chatId, 'typing');
 
