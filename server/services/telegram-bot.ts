@@ -217,8 +217,8 @@ export function initializeTelegramBot() {
       // Process the request using AI with chat context
       const response = await processNaturalLanguageRequest(userMessage, chatId);
 
-      // Send response
-      await bot?.sendMessage(chatId, response, {
+      // Send response (safely handles long messages)
+      await safeSendMessage(chatId, response, {
         parse_mode: 'Markdown',
         disable_web_page_preview: true
       });
@@ -233,6 +233,50 @@ export function initializeTelegramBot() {
   });
 
   return bot;
+}
+
+// Helper function to safely send messages within Telegram's 4096 character limit
+async function safeSendMessage(chatId: number, text: string, options?: any): Promise<void> {
+  const MAX_LENGTH = 4096;
+  
+  if (text.length <= MAX_LENGTH) {
+    await bot?.sendMessage(chatId, text, options);
+    return;
+  }
+  
+  // Split message into chunks
+  const chunks: string[] = [];
+  let currentChunk = '';
+  const lines = text.split('\n');
+  
+  for (const line of lines) {
+    if ((currentChunk + line + '\n').length > MAX_LENGTH) {
+      if (currentChunk) {
+        chunks.push(currentChunk.trim());
+        currentChunk = '';
+      }
+      // If a single line is too long, truncate it
+      if (line.length > MAX_LENGTH) {
+        chunks.push(line.substring(0, MAX_LENGTH - 20) + '...(truncated)');
+      } else {
+        currentChunk = line + '\n';
+      }
+    } else {
+      currentChunk += line + '\n';
+    }
+  }
+  
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
+  }
+  
+  // Send chunks with small delay
+  for (let i = 0; i < chunks.length; i++) {
+    await bot?.sendMessage(chatId, chunks[i] + (i < chunks.length - 1 ? '\n\n_(continued...)_' : ''), options);
+    if (i < chunks.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
 }
 
 async function processNaturalLanguageRequest(message: string, chatId: number): Promise<string> {
@@ -405,15 +449,21 @@ async function executeAction(
           );
         }
         
-        if (params.limit) {
-          filtered = filtered.slice(0, params.limit);
-        }
+        // Always limit to prevent message too long errors (default: 10, max: 20)
+        const limit = Math.min(params.limit || 10, 20);
+        const totalFound = filtered.length;
+        filtered = filtered.slice(0, limit);
         
         if (filtered.length === 0) {
           return `No clients found matching your criteria.`;
         }
         
-        let response = `📋 Found ${filtered.length} client(s):\n\n`;
+        let response = `📋 Found ${totalFound} client(s)`;
+        if (totalFound > limit) {
+          response += ` (showing first ${limit})`;
+        }
+        response += `:\n\n`;
+        
         filtered.forEach((client, idx) => {
           response += `${idx + 1}. *${client.name}*\n`;
           response += `   Status: ${client.status?.replace(/_/g, ' ')}\n`;
@@ -422,6 +472,11 @@ async function executeAction(
           if (client.leadScore) response += `   Score: ${client.leadScore}\n`;
           response += `\n`;
         });
+        
+        // Ensure message is within Telegram's 4096 character limit
+        if (response.length > 4000) {
+          response = response.substring(0, 3900) + '\n\n...(truncated)';
+        }
         
         return response;
       }
