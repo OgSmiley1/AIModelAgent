@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ReminderNotifications } from "@/components/reminders/reminder-notifications";
 import Dashboard from "@/pages/dashboard";
-import WhatsApp from "@/pages/whatsapp";
 import Clients from "@/pages/clients-working";
 import Forecasting from "@/pages/forecasting";
 import AIAgentChat from "@/pages/ai-agent-chat";
@@ -22,7 +21,6 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/whatsapp" component={WhatsApp} />
       <Route path="/clients" component={Clients} />
       <Route path="/forecasting" component={Forecasting} />
       <Route path="/ai-chat" component={AIAgentChat} />

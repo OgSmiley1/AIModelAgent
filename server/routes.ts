@@ -18,7 +18,8 @@ import * as path from "path";
 import { 
   insertClientSchema, 
   insertMessageSchema, 
-  insertFollowUpSchema, 
+  insertFollowUpSchema,
+  insertAppointmentSchema,
   insertInteractionSchema,
   insertDocumentSchema,
   insertTripPlanSchema,

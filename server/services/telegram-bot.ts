@@ -615,3 +615,58 @@ async function executeAction(
 export function getTelegramBot() {
   return bot;
 }
+
+// Telegram Reminder System
+let reminderInterval: NodeJS.Timeout | null = null;
+
+export function startReminderSystem(adminChatId: number) {
+  if (reminderInterval) {
+    console.log('⏰ Reminder system already running');
+    return;
+  }
+
+  console.log('⏰ Starting Telegram reminder system...');
+  
+  // Check every 15 minutes
+  reminderInterval = setInterval(async () => {
+    try {
+      const appointments = await storage.getAllAppointments();
+      const now = new Date();
+      const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      
+      for (const appointment of appointments) {
+        const appointmentDate = new Date(appointment.appointmentDate);
+        
+        // Send reminder 24 hours before
+        if (appointmentDate > now && appointmentDate <= in24Hours && !appointment.reminderSent) {
+          const client = await storage.getClient(appointment.clientId);
+          if (client) {
+            const message = `🔔 *Appointment Reminder*\n\n` +
+              `📅 Client: ${client.name}\n` +
+              `⏰ Time: ${appointmentDate.toLocaleString()}\n` +
+              `📝 Note: ${appointment.notes || 'No notes'}\n\n` +
+              `_Reminder sent 24 hours before appointment_`;
+            
+            await bot?.sendMessage(adminChatId, message, { parse_mode: 'Markdown' });
+            
+            // Mark as sent
+            await storage.updateAppointment(appointment.id, { reminderSent: true });
+            console.log(`✅ Sent reminder for ${client.name}'s appointment`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Reminder check error:', error);
+    }
+  }, 15 * 60 * 1000); // Check every 15 minutes
+  
+  console.log('✅ Telegram reminder system started');
+}
+
+export function stopReminderSystem() {
+  if (reminderInterval) {
+    clearInterval(reminderInterval);
+    reminderInterval = null;
+    console.log('⏸️ Telegram reminder system stopped');
+  }
+}

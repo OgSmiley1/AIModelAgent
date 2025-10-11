@@ -4,6 +4,7 @@ import {
   type Conversation, type InsertConversation,
   type Message, type InsertMessage,
   type FollowUp, type InsertFollowUp,
+  type Appointment, type InsertAppointment,
   type Interaction, type InsertInteraction,
   type Activity, type InsertActivity,
   type Document, type InsertDocument,
@@ -55,6 +56,14 @@ export interface IStorage {
   getPendingFollowUps(): Promise<FollowUp[]>;
   createFollowUp(followUp: InsertFollowUp): Promise<FollowUp>;
   updateFollowUp(id: string, updates: Partial<FollowUp>): Promise<FollowUp>;
+
+  // Appointment operations
+  getAppointmentById(id: string): Promise<Appointment | undefined>;
+  getAllAppointments(): Promise<Appointment[]>;
+  getAppointmentsByClient(clientId: string): Promise<Appointment[]>;
+  createAppointment(appointment: InsertAppointment): Promise<Appointment>;
+  updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment>;
+  deleteAppointment(id: string): Promise<boolean>;
 
   // Interaction operations
   getInteraction(id: string): Promise<Interaction | undefined>;
@@ -162,6 +171,7 @@ export class MemStorage implements IStorage {
   private conversations: Map<string, Conversation> = new Map();
   private messages: Map<string, Message> = new Map();
   private followUps: Map<string, FollowUp> = new Map();
+  private appointments: Map<string, Appointment> = new Map();
   private interactions: Map<string, Interaction> = new Map();
   private activities: Map<string, Activity> = new Map();
   private documents: Map<string, Document> = new Map();
@@ -434,6 +444,45 @@ export class MemStorage implements IStorage {
     const updatedFollowUp = { ...followUp, ...updates };
     this.followUps.set(id, updatedFollowUp);
     return updatedFollowUp;
+  }
+
+  async getAppointmentById(id: string): Promise<Appointment | undefined> {
+    return this.appointments.get(id);
+  }
+
+  async getAllAppointments(): Promise<Appointment[]> {
+    return Array.from(this.appointments.values());
+  }
+
+  async getAppointmentsByClient(clientId: string): Promise<Appointment[]> {
+    return Array.from(this.appointments.values()).filter(a => a.clientId === clientId);
+  }
+
+  async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
+    const id = randomUUID();
+    const appointment: Appointment = {
+      ...insertAppointment,
+      notes: insertAppointment.notes ?? null,
+      reminderSent: insertAppointment.reminderSent ?? false,
+      id,
+      createdAt: new Date(),
+    };
+    this.appointments.set(id, appointment);
+    return appointment;
+  }
+
+  async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment> {
+    const appointment = this.appointments.get(id);
+    if (!appointment) {
+      throw new Error(`Appointment with id ${id} not found`);
+    }
+    const updatedAppointment = { ...appointment, ...updates };
+    this.appointments.set(id, updatedAppointment);
+    return updatedAppointment;
+  }
+
+  async deleteAppointment(id: string): Promise<boolean> {
+    return this.appointments.delete(id);
   }
 
   // Interaction operations

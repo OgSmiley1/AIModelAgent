@@ -129,6 +129,16 @@ export const followUps = pgTable("follow_ups", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Appointments table for managing client appointments
+export const appointments = pgTable("appointments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  appointmentDate: timestamp("appointment_date").notNull(),
+  notes: text("notes"),
+  reminderSent: boolean("reminder_sent").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Interactions table for tracking all client touchpoints
 export const interactions = pgTable("interactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -283,6 +293,11 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 });
 
 export const insertFollowUpSchema = createInsertSchema(followUps).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAppointmentSchema = createInsertSchema(appointments).omit({
   id: true,
   createdAt: true,
 });
@@ -447,6 +462,9 @@ export type Message = typeof messages.$inferSelect;
 
 export type InsertFollowUp = z.infer<typeof insertFollowUpSchema>;
 export type FollowUp = typeof followUps.$inferSelect;
+
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+export type Appointment = typeof appointments.$inferSelect;
 
 export type InsertInteraction = z.infer<typeof insertInteractionSchema>;
 export type Interaction = typeof interactions.$inferSelect;

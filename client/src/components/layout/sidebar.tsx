@@ -18,7 +18,6 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { SiWhatsapp } from "react-icons/si";
 
 const navigation = [
   { 
@@ -28,16 +27,6 @@ const navigation = [
     description: "Main overview with key metrics and live activity",
     category: "Core",
     priority: 1
-  },
-  { 
-    name: "WhatsApp Business", 
-    href: "/whatsapp", 
-    icon: SiWhatsapp, 
-    status: "live",
-    description: "Live WhatsApp message monitoring and AI responses", 
-    category: "Core",
-    priority: 2,
-    badge: "LIVE"
   },
   { 
     name: "Client Registry", 
@@ -127,13 +116,11 @@ const navigation = [
 ];
 
 interface SidebarProps {
-  whatsappConnected?: boolean;
   aiOnline?: boolean;
   databaseActive?: boolean;
 }
 
 export function Sidebar({ 
-  whatsappConnected = false, 
   aiOnline = true, 
   databaseActive = true 
 }: SidebarProps) {
@@ -293,9 +280,9 @@ export function Sidebar({
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">WhatsApp:</span>
-              <span className={cn(whatsappConnected ? "text-chart-1 font-medium" : "text-chart-2 font-medium")} data-testid="whatsapp-status">
-                {whatsappConnected ? "● Connected" : "○ Disconnected"}
+              <span className="text-muted-foreground">Telegram Bot:</span>
+              <span className="text-chart-1 font-medium" data-testid="telegram-status">
+                ● Active
               </span>
             </div>
             <div className="flex justify-between">

@@ -96,6 +96,15 @@ app.use((req, res, next) => {
   // Run import in background after server starts
   setTimeout(importExcelData, 3000);
 
+  // Start Telegram reminder system (check every 15 minutes for appointments)
+  const { startReminderSystem } = await import('./services/telegram-bot');
+  const ADMIN_CHAT_ID = parseInt(process.env.TELEGRAM_ADMIN_CHAT_ID || '0');
+  if (ADMIN_CHAT_ID) {
+    startReminderSystem(ADMIN_CHAT_ID);
+  } else {
+    console.log('⚠️ TELEGRAM_ADMIN_CHAT_ID not set - Reminders disabled. Set it to your Telegram chat ID to enable.');
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
