@@ -287,17 +287,26 @@
                 Your client data has been enhanced with intelligent insights, priority rankings, and actionable follow-up recommendations.
             </div>
             
+            {% set total_clients = stats.get('total_clients') if stats else None %}
+            {% set high_priority = stats.get('high_priority') if stats else None %}
+            {% set vip_clients = stats.get('vip_clients') if stats else None %}
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-number" id="totalClients">-</div>
+                    <div class="stat-number" id="totalClients" data-target="{{ total_clients if total_clients is not none else '' }}">
+                        {{ total_clients if total_clients is not none else '-' }}
+                    </div>
                     <div class="stat-label">Total Clients</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number" id="highPriority">-</div>
+                    <div class="stat-number" id="highPriority" data-target="{{ high_priority if high_priority is not none else '' }}">
+                        {{ high_priority if high_priority is not none else '-' }}
+                    </div>
                     <div class="stat-label">High Priority</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number" id="vipClients">-</div>
+                    <div class="stat-number" id="vipClients" data-target="{{ vip_clients if vip_clients is not none else '' }}">
+                        {{ vip_clients if vip_clients is not none else '-' }}
+                    </div>
                     <div class="stat-label">VIP Clients</div>
                 </div>
             </div>
@@ -383,30 +392,43 @@
     </div>
 
     <script>
-        // Simulate loading stats (in a real app, these would come from the server)
         document.addEventListener('DOMContentLoaded', function() {
-            // Animate numbers counting up
-            animateNumber('totalClients', 0, 150, 2000);
-            animateNumber('highPriority', 0, 25, 2500);
-            animateNumber('vipClients', 0, 12, 3000);
+            const stats = [
+                { id: 'totalClients', duration: 2000 },
+                { id: 'highPriority', duration: 2500 },
+                { id: 'vipClients', duration: 3000 }
+            ];
+
+            stats.forEach(({ id, duration }) => {
+                const element = document.getElementById(id);
+                if (!element) {
+                    return;
+                }
+
+                const targetValue = element.dataset.target;
+                const numericTarget = targetValue !== '' ? parseInt(targetValue, 10) : null;
+
+                if (Number.isFinite(numericTarget)) {
+                    animateNumber(element, numericTarget, duration);
+                }
+            });
         });
 
-        function animateNumber(elementId, start, end, duration) {
-            const element = document.getElementById(elementId);
+        function animateNumber(element, target, duration) {
+            const startValue = parseInt(element.textContent, 10) || 0;
             const startTime = performance.now();
-            
+
             function update(currentTime) {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                
-                const current = Math.floor(start + (end - start) * progress);
+                const current = Math.floor(startValue + (target - startValue) * progress);
                 element.textContent = current;
-                
+
                 if (progress < 1) {
                     requestAnimationFrame(update);
                 }
             }
-            
+
             requestAnimationFrame(update);
         }
 

@@ -2,7 +2,17 @@ import os
 import requests
 import pandas as pd
 import json
-from flask import Flask, request, render_template, send_from_directory, flash, redirect, url_for, jsonify
+from flask import (
+    Flask,
+    request,
+    render_template,
+    send_from_directory,
+    flash,
+    redirect,
+    url_for,
+    jsonify,
+    session,
+)
 from werkzeug.utils import secure_filename
 import tempfile
 import time
@@ -201,12 +211,12 @@ def analyze_file():
     """Handle file upload and analysis"""
     if 'file' not in request.files:
         flash('No file selected. Please choose an Excel file to analyze.', 'error')
-        return redirect(request.url)
-    
+        return redirect(url_for('index'))
+
     file = request.files['file']
     if file.filename == '':
         flash('No file selected. Please choose an Excel file to analyze.', 'error')
-        return redirect(request.url)
+        return redirect(url_for('index'))
 
     if file and file.filename.lower().endswith(('.xlsx', '.xls')):
         try:
@@ -219,27 +229,33 @@ def analyze_file():
             
             # Analyze with Manus AI
             result = analyze_with_manus(input_path, filename)
-            
+
             if result['success']:
+                stats = result.get('stats')
+                if stats:
+                    stats_store = session.get('analysis_stats', {})
+                    stats_store[result['output_file']] = stats
+                    session['analysis_stats'] = stats_store
                 flash(f"✅ Analysis completed! {result['message']}", 'success')
                 return redirect(url_for('results', filename=result['output_file']))
             else:
                 flash(f"❌ Analysis failed: {result['message']}", 'error')
-                return redirect(request.url)
-                
+                return redirect(url_for('index'))
+
         except Exception as e:
             flash(f"❌ Error processing file: {str(e)}", 'error')
-            return redirect(request.url)
+            return redirect(url_for('index'))
     else:
         flash('❌ Invalid file type. Please upload an Excel file (.xlsx or .xls)', 'error')
-        return redirect(request.url)
+        return redirect(url_for('index'))
 
 @app.route('/results/<filename>')
 def results(filename):
     """Display analysis results"""
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if os.path.exists(file_path):
-        return render_template('results.html', filename=filename)
+        stats = session.get('analysis_stats', {}).get(filename)
+        return render_template('results.html', filename=filename, stats=stats)
     else:
         flash('❌ Results file not found.', 'error')
         return redirect(url_for('index'))
