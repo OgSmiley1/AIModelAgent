@@ -66,7 +66,7 @@ app.use((req, res, next) => {
             
             if (response?.ok) {
               const result = await response.json();
-              console.log(`✅ SUCCESS: ${result.imported} clients and ${result.appointments} appointments imported!`);
+              console.log(`✅ SUCCESS: ${result.imported} new clients, ${result.skipped || 0} duplicates skipped, ${result.appointments} appointments!`);
               return true;
             } else {
               console.log(`⚠️ Import attempt ${attempt} failed, retrying...`);

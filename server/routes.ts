@@ -343,12 +343,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { importExcelData } = await import('./import-excel');
       const result = await importExcelData(storage);
       
-      console.log(`✅ Excel import complete: ${result.imported} clients, ${result.appointments} appointments`);
+      console.log(`✅ Excel import complete: ${result.imported} new clients, ${result.skipped} duplicates skipped, ${result.appointments} appointments`);
       
       res.json({
         success: true,
-        message: "Excel data imported successfully",
+        message: `Excel data imported: ${result.imported} new clients, ${result.skipped} duplicates skipped`,
         imported: result.imported,
+        skipped: result.skipped,
         appointments: result.appointments,
         errors: result.errors
       });

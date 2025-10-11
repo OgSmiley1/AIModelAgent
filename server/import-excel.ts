@@ -17,11 +17,17 @@ interface ExcelClient {
 export async function importExcelData(storage: Storage): Promise<{
   imported: number;
   errors: number;
+  skipped: number;
   appointments: number;
 }> {
   try {
-    // Read Vacheron tracker workbook
-    const workbook = XLSX.readFile('attached_assets/Vacheron_Constantin V1 tracker_1760191439139.xlsm');
+    // Read Vacheron tracker workbook (try new file first, fallback to old)
+    let workbook;
+    try {
+      workbook = XLSX.readFile('attached_assets/Vacheron_Constantin V1 tracker_1760192864660.xlsm');
+    } catch {
+      workbook = XLSX.readFile('attached_assets/Vacheron_Constantin V1 tracker_1760191439139.xlsm');
+    }
     
     // Get Airtable sheet for client data
     const airtableSheet = workbook.Sheets['Airtable'];
@@ -33,13 +39,24 @@ export async function importExcelData(storage: Storage): Promise<{
       return !salesAssociate.includes('maaz') && row['CLIENT ID'];
     });
     
+    // Get existing clients to check for duplicates
+    const existingClients = await storage.getAllClients();
+    const existingClientIds = new Set(existingClients.map(c => c.id));
+    
     let imported = 0;
+    let skipped = 0;
     let errors = 0;
     
     // Import clients
     for (const excelClient of validClients) {
       try {
         const clientId = String(excelClient['CLIENT ID']);
+        
+        // Skip if client already exists
+        if (existingClientIds.has(clientId)) {
+          skipped++;
+          continue;
+        }
         
         // Map status from Excel to our schema
         let status = 'prospect';
@@ -49,7 +66,7 @@ export async function importExcelData(storage: Storage): Promise<{
         else if (excelStatus.includes('request')) status = 'requested_callback';
         else if (excelStatus.includes('changed') || excelStatus.includes('closed')) status = 'changed_mind';
         
-        // Create or update client
+        // Create new client
         await storage.createClient({
           id: clientId,
           name: `Client ${clientId}`,
@@ -102,7 +119,8 @@ export async function importExcelData(storage: Storage): Promise<{
       }
     }
     
-    return { imported, errors, appointments };
+    console.log(`📊 Excel import complete: ${imported} new clients imported, ${skipped} duplicates skipped, ${appointments} appointments`);
+    return { imported, errors, skipped, appointments };
   } catch (error) {
     console.error('Excel import error:', error);
     throw error;

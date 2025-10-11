@@ -260,7 +260,8 @@ export class MemStorage implements IStorage {
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
-    const id = randomUUID();
+    // Use provided ID or generate new UUID
+    const id = insertClient.id || randomUUID();
     const now = new Date();
     const client: Client = {
       ...insertClient,
