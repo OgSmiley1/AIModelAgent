@@ -2,11 +2,21 @@
 
 ## Overview
 
-This is a full-stack TypeScript application built with Express.js backend and React frontend, featuring AI-powered business management capabilities including WhatsApp integration, client management, and intelligent analytics. The application appears to be focused on luxury sales and client relationship management, with sophisticated AI analysis capabilities for message processing and customer insights.
+This is a full-stack TypeScript application built with Express.js backend and React frontend, featuring AI-powered business management capabilities focused exclusively on Telegram integration, client management, and intelligent analytics. The application is designed for luxury sales and client relationship management (Vacheron Constantin watches), with sophisticated AI analysis capabilities powered by Google Gemini API for natural language processing and automated appointment reminders.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+### October 11, 2025
+- **Excel Data Import**: Successfully imported 287 clients and 6 appointments from Vacheron Constantin V1 tracker workbook
+- **Appointment Reminders**: Added automated Telegram notification system that sends reminders 24 hours before appointments
+- **WhatsApp Removal**: Removed all WhatsApp features from the UI (menu items, status indicators, routes) - system now Telegram-focused only
+- **Data Source**: Application now uses Excel files (Airtable sheet for clients, Reminder_Automation for appointments) instead of mock data
+- **Telegram Bot**: Enhanced with Google Gemini AI for natural language command processing
+- **UI Updates**: Sidebar now shows "Telegram Bot: ● Active" status, updated client count to 287
 
 ## System Architecture
 
@@ -39,10 +49,11 @@ Preferred communication style: Simple, everyday language.
 - **API Security**: Express middleware for request validation and error handling
 
 ### AI and Analytics Integration
-- **AI Services**: Dedicated AI analyzer service for conversation analysis
-- **WhatsApp Integration**: Business API integration with webhook processing
+- **AI Services**: Google Gemini API (gemini-2.0-flash-exp) for natural language processing
+- **Telegram Bot Integration**: Automated message handling with context-aware responses
 - **Real-time Analytics**: WebSocket-based live data streaming
 - **Message Processing**: Intelligent sentiment analysis and client profiling
+- **Appointment Reminders**: Automated Telegram notifications 24 hours before appointments
 
 ## External Dependencies
 
@@ -51,8 +62,8 @@ Preferred communication style: Simple, everyday language.
 - **Drizzle ORM**: Type-safe database toolkit with schema migrations
 
 ### AI and Communication APIs
-- **WhatsApp Business API**: Message processing and client communication
-- **Google Generative AI**: Conversation analysis and business intelligence
+- **Google Generative AI**: Gemini 2.0 Flash for conversation analysis and business intelligence
+- **Telegram Bot API**: Automated message handling and appointment reminders
 - **TanStack Query**: Server state synchronization and caching
 
 ### UI and Styling
