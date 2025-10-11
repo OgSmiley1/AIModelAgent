@@ -311,15 +311,6 @@ Respond ONLY with valid JSON:
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'object',
-          properties: {
-            action: { type: 'string' },
-            params: { type: 'object' },
-            response: { type: 'string' }
-          },
-          required: ['action', 'response']
-        },
         temperature: 0.3
       }
     });
