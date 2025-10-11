@@ -67,5 +67,9 @@ externalPort = 3001
 localPort = 43647
 externalPort = 3000
 
+[[ports]]
+localPort = 45817
+externalPort = 6000
+
 [agent]
 integrations = ["javascript_openai:1.0.0", "javascript_object_storage:1.0.0", "javascript_log_in_with_replit:1.0.0", "javascript_database:1.0.0", "javascript_gemini:1.0.0", "javascript_auth_all_persistance:1.0.0"]
