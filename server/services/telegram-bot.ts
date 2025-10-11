@@ -305,7 +305,9 @@ Respond ONLY with valid JSON:
     
     const result = await genai.models.generateContent({
       model: 'gemini-2.0-flash-exp',
-      contents: message,
+      contents: [{
+        parts: [{ text: message }]
+      }],
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: 'application/json',
@@ -323,13 +325,32 @@ Respond ONLY with valid JSON:
     });
     
     console.log('✅ [Telegram Bot] Gemini API response received');
-    console.log('📄 [Telegram Bot] Response object:', JSON.stringify(result, null, 2));
+    console.log('📄 [Telegram Bot] Full response keys:', Object.keys(result));
+    console.log('📄 [Telegram Bot] result.text:', result.text);
+    console.log('📄 [Telegram Bot] result.candidates:', result.candidates ? 'exists' : 'undefined');
     
     // Safely access the response text
-    const responseText = result.text || '';
+    let responseText = '';
+    
+    // Method 1: Direct text property (recommended by SDK)
+    if (result.text) {
+      responseText = result.text;
+      console.log('✅ [Telegram Bot] Got text from result.text');
+    }
+    // Method 2: From candidates array
+    else if (result.candidates && result.candidates.length > 0) {
+      const firstCandidate = result.candidates[0];
+      if (firstCandidate.content && firstCandidate.content.parts && firstCandidate.content.parts.length > 0) {
+        responseText = firstCandidate.content.parts[0].text || '';
+        console.log('✅ [Telegram Bot] Got text from result.candidates');
+      }
+    }
+    
     console.log('📝 [Telegram Bot] Response text:', responseText);
     
     if (!responseText) {
+      console.error('❌ [Telegram Bot] No text in response.');
+      console.error('❌ [Telegram Bot] Full result object:', JSON.stringify(result, null, 2));
       throw new Error('Empty response from Gemini API');
     }
     
