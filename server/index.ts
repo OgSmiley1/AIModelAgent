@@ -73,7 +73,7 @@ app.use((req, res, next) => {
               console.log(`⚠️ Import attempt ${attempt} failed, retrying...`);
             }
           } catch (error) {
-            console.log(`⚠️ Import attempt ${attempt} error:`, error.message);
+            console.log(`⚠️ Import attempt ${attempt} error:`, (error as Error).message);
           }
           
           // Wait before retry
@@ -89,7 +89,7 @@ app.use((req, res, next) => {
         return false;
       }
     } catch (error) {
-      console.log("⚠️ Auto-import system error:", error.message);
+      console.log("⚠️ Auto-import system error:", (error as Error).message);
       return false;
     }
   };
