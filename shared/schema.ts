@@ -72,6 +72,25 @@ export const clients = pgTable("clients", {
   followUpRequired: boolean("follow_up_required").default(false),
   followUpDate: timestamp("follow_up_date"),
   lastScoreUpdate: timestamp("last_score_update").defaultNow(),
+  // Excel import fields from tracker
+  clientFeedback: text("client_feedback"), // Client_Feedback column
+  requestDate: timestamp("request_date"), // Request_Date column
+  boutique: text("boutique"), // Boutique column
+  clientSegment: text("client_segment"), // Client_Segment column (VIP, Prospect, etc.)
+  salesAssociate: text("sales_associate"), // Sales_Associate column
+  followUpStatus: text("follow_up_status"), // FollowUp_Status column
+  priorityLevel: text("priority_level"), // Priority_Level column
+  lastContact: timestamp("last_contact"), // Last_Contact column
+  nextAction: text("next_action"), // Next_Action column
+  completed: boolean("completed").default(false), // Completed column
+  reminderSet: boolean("reminder_set").default(false), // Reminder_Set column
+  reminderDate: timestamp("reminder_date"), // Reminder_Date column
+  reminderNotes: text("reminder_notes"), // Reminder_Notes column
+  primaryOwner: text("primary_owner"), // Primary_Owner column
+  backupOwner: text("backup_owner"), // Backup_Owner column
+  handoverStatus: text("handover_status"), // Handover_Status column
+  handoverDate: timestamp("handover_date"), // Handover_Date column
+  handoverNotes: text("handover_notes"), // Handover_Notes column
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -276,9 +295,10 @@ export const insertUserSchema = createInsertSchema(users).omit({
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({
-  id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  id: z.string().optional(), // Allow id to be provided (for Excel import)
 });
 
 export const insertConversationSchema = createInsertSchema(conversations).omit({
