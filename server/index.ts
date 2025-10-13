@@ -100,6 +100,11 @@ app.use((req, res, next) => {
     // Seed watch catalog and FAQ database after Excel import
     const { seedCatalogData } = await import('./seed-catalog');
     await seedCatalogData();
+    
+    // Import full watch collection and Airtable client data
+    console.log('📊 Importing Collection & Airtable data...');
+    const { importFullExcelData } = await import('./import-collection');
+    await importFullExcelData();
   }, 3000);
 
   // Start Telegram reminder system (check every 15 minutes for appointments)

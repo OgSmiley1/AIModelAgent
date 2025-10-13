@@ -54,10 +54,14 @@ export function initializeTelegramBot() {
       `/list_confirmed - List confirmed clients\n` +
       `/list_sold - List sold clients\n` +
       `/list_hesitant - List hesitant clients\n` +
-      `/list_callback - List clients needing callback\n\n` +
+      `/list_callback - List clients needing callback\n` +
+      `/clients_for <ambassador> - List clients by ambassador\n` +
+      `Example: /clients_for Maaz\n\n` +
       `*Watch Catalog:*\n` +
       `/watch <reference> - Get watch details\n` +
-      `Example: /watch 4500V/110A-B128\n\n` +
+      `/price <reference> - Get watch price & availability\n` +
+      `/available - List all available watches\n` +
+      `Examples: /watch 4500V, /price Overseas\n\n` +
       `*FAQ/Knowledge Base:*\n` +
       `/faq <query> - Search FAQ database\n` +
       `Example: /faq repair turnaround\n\n` +
@@ -69,6 +73,7 @@ export function initializeTelegramBot() {
       `📞 "Remind me to call Client Y tomorrow"\n` +
       `❌ "Close the request for client Z"\n` +
       `🕐 "Tell me about watch 4500V/110A-B128"\n` +
+      `💰 "What's the price of Overseas?"\n` +
       `❓ "Client asked about repairs"\n\n` +
       `Just send me your request!`,
       { parse_mode: 'Markdown' }
@@ -304,6 +309,110 @@ export function initializeTelegramBot() {
     } catch (error) {
       console.error('Error searching FAQs:', error);
       await bot?.sendMessage(chatId, '❌ Error searching FAQ database');
+    }
+  });
+
+  bot.onText(/\/price (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const query = match?.[1];
+    
+    if (!query) {
+      await bot?.sendMessage(chatId, 'Please provide a watch reference or name. Example: /price 4500V');
+      return;
+    }
+    
+    try {
+      const watches = await storage.searchWatches(query);
+      
+      if (watches.length === 0) {
+        await bot?.sendMessage(chatId, `❌ No watches found for "${query}"`);
+        return;
+      }
+      
+      const watch = watches[0];
+      await storage.incrementWatchPopularity(watch.id);
+      
+      let response = `🕐 *${watch.model || watch.reference}*\n\n`;
+      response += `Reference: ${watch.reference}\n`;
+      if (watch.collectionName) response += `Collection: ${watch.collectionName}\n`;
+      if (watch.price) response += `💰 Price: ${watch.currency} ${watch.price.toLocaleString()}\n`;
+      response += `📦 ${watch.available ? '✅ Available' : '❌ Out of Stock'}\n`;
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error searching watches:', error);
+      await bot?.sendMessage(chatId, '❌ Error searching watch catalog');
+    }
+  });
+
+  bot.onText(/\/available/, async (msg) => {
+    const chatId = msg.chat.id;
+    
+    try {
+      const watches = await storage.getAvailableWatches();
+      
+      if (watches.length === 0) {
+        await bot?.sendMessage(chatId, 'No watches currently available.');
+        return;
+      }
+      
+      let response = `✅ *Available Watches* (${watches.length}):\n\n`;
+      watches.slice(0, 15).forEach((watch, idx) => {
+        response += `${idx + 1}. ${watch.reference}`;
+        if (watch.collectionName) response += ` - ${watch.collectionName}`;
+        if (watch.price) response += ` (${watch.currency} ${watch.price.toLocaleString()})`;
+        response += `\n`;
+      });
+      
+      if (watches.length > 15) {
+        response += `\n_...and ${watches.length - 15} more_`;
+      }
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error fetching available watches:', error);
+      await bot?.sendMessage(chatId, '❌ Error fetching available watches');
+    }
+  });
+
+  bot.onText(/\/clients_for (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const ambassador = match?.[1];
+    
+    if (!ambassador) {
+      await bot?.sendMessage(chatId, 'Please provide ambassador name. Example: /clients_for Maaz');
+      return;
+    }
+    
+    try {
+      const clients = await storage.getAllClients();
+      const filtered = clients.filter(c => 
+        c.salesAssociate?.toLowerCase().includes(ambassador.toLowerCase()) ||
+        c.boutiqueSalesAssociateName?.toLowerCase().includes(ambassador.toLowerCase())
+      );
+      
+      if (filtered.length === 0) {
+        await bot?.sendMessage(chatId, `No clients found for ambassador "${ambassador}"`);
+        return;
+      }
+      
+      let response = `👥 *Clients for ${ambassador}* (${filtered.length}):\n\n`;
+      filtered.slice(0, 20).forEach((client, idx) => {
+        response += `${idx + 1}. ${client.name}\n`;
+        response += `   Status: ${client.status}\n`;
+        if (client.clientSegment) response += `   Segment: ${client.clientSegment}\n`;
+        if (client.interests) response += `   Interests: ${client.interests}\n`;
+        response += `\n`;
+      });
+      
+      if (filtered.length > 20) {
+        response += `_...and ${filtered.length - 20} more_`;
+      }
+      
+      await safeSendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      await bot?.sendMessage(chatId, '❌ Error fetching clients');
     }
   });
 
