@@ -26,7 +26,34 @@ export const watchCollection = pgTable("watch_collection", {
   available: boolean("available").default(false),
   stock: text("stock"),
   category: text("category").default("Luxury Watch"),
-  specifications: jsonb("specifications"), // Technical specs, materials, etc.
+  
+  // Detailed technical specifications
+  caseSize: text("case_size"), // e.g., "40mm", "41mm x 32mm"
+  caseMaterial: text("case_material"), // e.g., "18K Pink Gold", "Platinum", "Stainless Steel"
+  caseThickness: text("case_thickness"), // e.g., "8.1mm", "12.5mm"
+  dialColor: text("dial_color"), // e.g., "Silver", "Blue", "Black"
+  strapBracelet: text("strap_bracelet"), // e.g., "Alligator Leather", "18K Gold Bracelet"
+  waterResistance: text("water_resistance"), // e.g., "30m", "50m", "100m"
+  
+  // Movement details
+  movementType: text("movement_type"), // e.g., "Automatic", "Manual", "Quartz"
+  caliber: text("caliber"), // e.g., "Calibre 2460 WT", "Calibre 1142"
+  powerReserve: text("power_reserve"), // e.g., "40 hours", "65 hours"
+  frequency: text("frequency"), // e.g., "28,800 vph", "21,600 vph"
+  jewels: integer("jewels"), // e.g., 27, 36
+  
+  // Complications and functions
+  complications: text("complications").array(), // e.g., ["Date", "Moon Phase", "Chronograph", "World Time"]
+  functions: text("functions").array(), // e.g., ["Hours", "Minutes", "Seconds", "Power Reserve Indicator"]
+  
+  // Additional details
+  crystalType: text("crystal_type"), // e.g., "Sapphire", "Anti-reflective sapphire"
+  caseBack: text("case_back"), // e.g., "Transparent", "Solid", "Exhibition"
+  limitedEdition: boolean("limited_edition").default(false),
+  pieceNumber: text("piece_number"), // For limited editions
+  productionYear: integer("production_year"),
+  
+  specifications: jsonb("specifications"), // Additional technical specs as JSON
   images: text("images").array(), // Array of image URLs
   tags: text("tags").array(), // Searchable tags
   popularity: integer("popularity").default(0), // Number of client interests
@@ -443,6 +470,26 @@ export const codeAnalysisReports = pgTable("code_analysis_reports", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// FAQ/Knowledge Base table for client service scripts
+export const faqDatabase = pgTable("faq_database", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  question: text("question").notNull(), // Client question or scenario
+  category: text("category").notNull(), // e.g., "Repairs", "Servicing", "Warranty", "Product Info", "Boutique Services"
+  keywords: text("keywords").array(), // Searchable keywords for quick lookup
+  answer: text("answer").notNull(), // Professional script/response
+  tone: text("tone").default("professional"), // professional, friendly, formal, empathetic
+  context: text("context"), // When to use this response
+  relatedReferences: text("related_references").array(), // Related watch references
+  usageCount: integer("usage_count").default(0), // Track how often this FAQ is used
+  lastUsed: timestamp("last_used"),
+  isActive: boolean("is_active").default(true),
+  priority: integer("priority").default(0), // Higher priority = shown first in search results
+  createdBy: text("created_by"), // Who created this FAQ entry
+  updatedBy: text("updated_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas for new tables
 export const insertGithubRepositorySchema = createInsertSchema(githubRepositories).omit({
   id: true,
@@ -465,6 +512,13 @@ export const insertAiLearningDocumentSchema = createInsertSchema(aiLearningDocum
 export const insertCodeAnalysisReportSchema = createInsertSchema(codeAnalysisReports).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertFaqSchema = createInsertSchema(faqDatabase).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastUsed: true,
 });
 
 // Types
@@ -534,3 +588,6 @@ export const insertWatchSchema = createInsertSchema(watchCollection).omit({
 
 export type InsertWatch = z.infer<typeof insertWatchSchema>;
 export type Watch = typeof watchCollection.$inferSelect;
+
+export type InsertFaq = z.infer<typeof insertFaqSchema>;
+export type Faq = typeof faqDatabase.$inferSelect;

@@ -94,7 +94,13 @@ app.use((req, res, next) => {
   };
   
   // Run import in background after server starts
-  setTimeout(importExcelData, 3000);
+  setTimeout(async () => {
+    await importExcelData();
+    
+    // Seed watch catalog and FAQ database after Excel import
+    const { seedCatalogData } = await import('./seed-catalog');
+    await seedCatalogData();
+  }, 3000);
 
   // Start Telegram reminder system (check every 15 minutes for appointments)
   const { startReminderSystem } = await import('./services/telegram-bot');

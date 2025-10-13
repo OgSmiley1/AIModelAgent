@@ -19,11 +19,12 @@ import {
   type AiLearningDocument, type InsertAiLearningDocument,
   type CodeAnalysisReport, type InsertCodeAnalysisReport,
   type Watch, type InsertWatch,
+  type Faq, type InsertFaq,
   users, clients, conversations, messages, followUps, appointments,
   interactions, activities, documents, tripPlans, aiConversations,
   systemSettings, deals, salesForecasts, leadScoringHistory,
   githubRepositories, selfEditingHistory, aiLearningDocuments,
-  codeAnalysisReports, watchCollection
+  codeAnalysisReports, watchCollection, faqDatabase
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from './db';
@@ -170,6 +171,16 @@ export interface IStorage {
   updateWatch(id: string, updates: Partial<Watch>): Promise<Watch>;
   deleteWatch(id: string): Promise<boolean>;
   incrementWatchPopularity(id: string): Promise<void>;
+
+  // FAQ/Knowledge Base operations
+  getFaq(id: string): Promise<Faq | undefined>;
+  getAllFaqs(): Promise<Faq[]>;
+  getFaqsByCategory(category: string): Promise<Faq[]>;
+  searchFaqs(query: string): Promise<Faq[]>;
+  createFaq(faq: InsertFaq): Promise<Faq>;
+  updateFaq(id: string, updates: Partial<Faq>): Promise<Faq>;
+  deleteFaq(id: string): Promise<boolean>;
+  incrementFaqUsage(id: string): Promise<Faq>;
 }
 
 export class MemStorage implements IStorage {
@@ -193,6 +204,7 @@ export class MemStorage implements IStorage {
   private aiLearningDocuments: Map<string, AiLearningDocument> = new Map();
   private codeAnalysisReports: Map<string, CodeAnalysisReport> = new Map();
   private watches: Map<string, Watch> = new Map();
+  private faqs: Map<string, Faq> = new Map();
   
   constructor() {
     // Initialize with some default system settings
@@ -1186,6 +1198,91 @@ export class MemStorage implements IStorage {
       this.watches.set(id, watch);
     }
   }
+
+  // FAQ/Knowledge Base operations
+  async getFaq(id: string): Promise<Faq | undefined> {
+    return this.faqs.get(id);
+  }
+
+  async getAllFaqs(): Promise<Faq[]> {
+    return Array.from(this.faqs.values())
+      .filter(faq => faq.isActive)
+      .sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        return b.usageCount - a.usageCount;
+      });
+  }
+
+  async getFaqsByCategory(category: string): Promise<Faq[]> {
+    return Array.from(this.faqs.values())
+      .filter(faq => faq.category === category && faq.isActive)
+      .sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        return b.usageCount - a.usageCount;
+      });
+  }
+
+  async searchFaqs(query: string): Promise<Faq[]> {
+    const searchTerm = query.toLowerCase();
+    return Array.from(this.faqs.values())
+      .filter(faq => 
+        faq.isActive && (
+          faq.question.toLowerCase().includes(searchTerm) ||
+          faq.answer.toLowerCase().includes(searchTerm) ||
+          (faq.context && faq.context.toLowerCase().includes(searchTerm)) ||
+          (faq.keywords && faq.keywords.some(kw => kw.toLowerCase().includes(searchTerm)))
+        )
+      )
+      .sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        return b.usageCount - a.usageCount;
+      });
+  }
+
+  async createFaq(faq: InsertFaq): Promise<Faq> {
+    const id = randomUUID();
+    const newFaq: Faq = {
+      ...faq,
+      id,
+      usageCount: faq.usageCount || 0,
+      isActive: faq.isActive ?? true,
+      priority: faq.priority || 0,
+      lastUsed: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.faqs.set(id, newFaq);
+    return newFaq;
+  }
+
+  async updateFaq(id: string, updates: Partial<Faq>): Promise<Faq> {
+    const faq = this.faqs.get(id);
+    if (!faq) throw new Error('FAQ not found');
+    
+    const updatedFaq = {
+      ...faq,
+      ...updates,
+      id,
+      updatedAt: new Date(),
+    };
+    
+    this.faqs.set(id, updatedFaq);
+    return updatedFaq;
+  }
+
+  async deleteFaq(id: string): Promise<boolean> {
+    return this.faqs.delete(id);
+  }
+
+  async incrementFaqUsage(id: string): Promise<Faq> {
+    const faq = this.faqs.get(id);
+    if (!faq) throw new Error('FAQ not found');
+    
+    faq.usageCount = (faq.usageCount || 0) + 1;
+    faq.lastUsed = new Date();
+    this.faqs.set(id, faq);
+    return faq;
+  }
 }
 
 // DatabaseStorage implementation using Drizzle ORM for persistent PostgreSQL storage
@@ -1797,6 +1894,73 @@ export class DatabaseStorage implements IStorage {
     await db.update(watchCollection)
       .set({ popularity: drizzleSql`${watchCollection.popularity} + 1` })
       .where(eq(watchCollection.id, id));
+  }
+
+  // FAQ/Knowledge Base operations
+  async getFaq(id: string): Promise<Faq | undefined> {
+    const result = await db.select().from(faqDatabase).where(eq(faqDatabase.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getAllFaqs(): Promise<Faq[]> {
+    return await db.select().from(faqDatabase)
+      .where(eq(faqDatabase.isActive, true))
+      .orderBy(desc(faqDatabase.priority), desc(faqDatabase.usageCount));
+  }
+
+  async getFaqsByCategory(category: string): Promise<Faq[]> {
+    return await db.select().from(faqDatabase)
+      .where(and(
+        eq(faqDatabase.category, category),
+        eq(faqDatabase.isActive, true)
+      ))
+      .orderBy(desc(faqDatabase.priority), desc(faqDatabase.usageCount));
+  }
+
+  async searchFaqs(query: string): Promise<Faq[]> {
+    return await db.select().from(faqDatabase)
+      .where(and(
+        eq(faqDatabase.isActive, true),
+        or(
+          drizzleSql`${faqDatabase.question} ILIKE ${'%' + query + '%'}`,
+          drizzleSql`${faqDatabase.answer} ILIKE ${'%' + query + '%'}`,
+          drizzleSql`${faqDatabase.context} ILIKE ${'%' + query + '%'}`,
+          drizzleSql`array_to_string(${faqDatabase.keywords}, ' ') ILIKE ${'%' + query + '%'}`
+        )
+      ))
+      .orderBy(desc(faqDatabase.priority), desc(faqDatabase.usageCount));
+  }
+
+  async createFaq(faq: InsertFaq): Promise<Faq> {
+    const faqData = { ...faq, id: randomUUID(), createdAt: new Date(), updatedAt: new Date() };
+    const result = await db.insert(faqDatabase).values(faqData as any).returning();
+    return result[0];
+  }
+
+  async updateFaq(id: string, updates: Partial<Faq>): Promise<Faq> {
+    const result = await db.update(faqDatabase)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(faqDatabase.id, id))
+      .returning();
+    if (result.length === 0) throw new Error('FAQ not found');
+    return result[0];
+  }
+
+  async deleteFaq(id: string): Promise<boolean> {
+    const result = await db.delete(faqDatabase).where(eq(faqDatabase.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async incrementFaqUsage(id: string): Promise<Faq> {
+    const result = await db.update(faqDatabase)
+      .set({ 
+        usageCount: drizzleSql`${faqDatabase.usageCount} + 1`,
+        lastUsed: new Date()
+      })
+      .where(eq(faqDatabase.id, id))
+      .returning();
+    if (result.length === 0) throw new Error('FAQ not found');
+    return result[0];
   }
 }
 

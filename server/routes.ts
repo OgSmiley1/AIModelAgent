@@ -257,6 +257,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FAQ/Knowledge Base API Routes
+  app.get("/api/faqs", async (req, res) => {
+    try {
+      const faqs = await storage.getAllFaqs();
+      res.json(faqs);
+    } catch (error) {
+      console.error("❌ Error fetching FAQs:", error);
+      res.status(500).json({ error: "Failed to fetch FAQs" });
+    }
+  });
+
+  app.get("/api/faqs/category/:category", async (req, res) => {
+    try {
+      const { category } = req.params;
+      const faqs = await storage.getFaqsByCategory(category);
+      res.json(faqs);
+    } catch (error) {
+      console.error("❌ Error fetching FAQs by category:", error);
+      res.status(500).json({ error: "Failed to fetch FAQs by category" });
+    }
+  });
+
+  app.get("/api/faqs/search", async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: "Search query required" });
+      }
+      const faqs = await storage.searchFaqs(q);
+      res.json(faqs);
+    } catch (error) {
+      console.error("❌ Error searching FAQs:", error);
+      res.status(500).json({ error: "Failed to search FAQs" });
+    }
+  });
+
+  app.get("/api/faqs/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const faq = await storage.getFaq(id);
+      if (!faq) {
+        return res.status(404).json({ error: "FAQ not found" });
+      }
+      // Increment usage count when FAQ is accessed
+      await storage.incrementFaqUsage(id);
+      res.json(faq);
+    } catch (error) {
+      console.error("❌ Error fetching FAQ:", error);
+      res.status(500).json({ error: "Failed to fetch FAQ" });
+    }
+  });
+
+  app.post("/api/faqs", async (req, res) => {
+    try {
+      const faq = await storage.createFaq(req.body);
+      res.json(faq);
+    } catch (error) {
+      console.error("❌ Error creating FAQ:", error);
+      res.status(500).json({ error: "Failed to create FAQ" });
+    }
+  });
+
+  app.patch("/api/faqs/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const faq = await storage.updateFaq(id, req.body);
+      res.json(faq);
+    } catch (error) {
+      console.error("❌ Error updating FAQ:", error);
+      res.status(500).json({ error: "Failed to update FAQ" });
+    }
+  });
+
+  app.delete("/api/faqs/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteFaq(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "FAQ not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("❌ Error deleting FAQ:", error);
+      res.status(500).json({ error: "Failed to delete FAQ" });
+    }
+  });
+
   // Generic Clients Import Route (for Maaz SHARIF data)
   app.post("/api/clients/import", async (req, res) => {
     try {
