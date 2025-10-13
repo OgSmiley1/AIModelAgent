@@ -14,6 +14,7 @@ import ClientStatus from "@/pages/client-status";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import ExcelAnalyzer from "@/pages/excel-analyzer";
+import ExportPage from "@/pages/export";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/client-status" component={ClientStatus} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/excel-analyzer" component={ExcelAnalyzer} />
+      <Route path="/export" component={ExportPage} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

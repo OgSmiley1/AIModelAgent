@@ -11,6 +11,7 @@ import { authenticateAdvancedAI, requireAdvancedAuth, AuthenticatedRequest } fro
 import { initializeWebSocket } from "./services/websocket";
 import { initializeGitHubService, getGitHubService } from "./services/github-service";
 import { selfEditingService } from "./services/self-editing-service";
+import { registerExportRoutes } from "./export-routes";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import * as fs from "fs";
@@ -2332,6 +2333,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Download failed" });
     }
   });
+
+  // Register export routes for data export to ChatGPT/Manus
+  registerExportRoutes(app);
 
   return httpServer;
 }

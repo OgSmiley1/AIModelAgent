@@ -27,10 +27,12 @@ interface AirtableRow {
   'Avalible?': boolean;
 }
 
-function parsePrice(priceStr: string): number {
+function parsePrice(priceStr: string | number): number {
   if (!priceStr) return 0;
+  // If already a number, return it
+  if (typeof priceStr === 'number') return priceStr;
   // Remove "AED" and commas, then parse
-  const cleaned = priceStr.replace(/[^\d.]/g, '');
+  const cleaned = String(priceStr).replace(/[^\d.]/g, '');
   return parseFloat(cleaned) || 0;
 }
 
