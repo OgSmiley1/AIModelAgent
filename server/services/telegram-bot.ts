@@ -47,20 +47,31 @@ export function initializeTelegramBot() {
     const chatId = msg.chat.id;
     bot?.sendMessage(
       chatId,
-      `🤖 CRM Bot Commands:\n\n` +
-      `*Direct Commands (No AI needed):*\n` +
+      `🤖 *Vacheron Constantin CRM Bot Commands:*\n\n` +
+      `*Client Management:*\n` +
       `/stats - View CRM statistics\n` +
+      `/list_vip - List VIP clients\n` +
       `/list_confirmed - List confirmed clients\n` +
       `/list_sold - List sold clients\n` +
       `/list_hesitant - List hesitant clients\n` +
       `/list_callback - List clients needing callback\n\n` +
-` *Natural Language (Powered by Google Gemini):*\n` +
+      `*Watch Catalog:*\n` +
+      `/watch <reference> - Get watch details\n` +
+      `Example: /watch 4500V/110A-B128\n\n` +
+      `*FAQ/Knowledge Base:*\n` +
+      `/faq <query> - Search FAQ database\n` +
+      `Example: /faq repair turnaround\n\n` +
+      `*Natural Language (AI-Powered):*\n` +
       `📋 "Show me all VIP clients"\n` +
       `👤 "Tell me about Client #108884411"\n` +
       `🔍 "Find client 108884411"\n` +
       `✏️ "Update his status to Sold"\n` +
       `📞 "Remind me to call Client Y tomorrow"\n` +
-      `❌ "Close the request for client Z"`
+      `❌ "Close the request for client Z"\n` +
+      `🕐 "Tell me about watch 4500V/110A-B128"\n` +
+      `❓ "Client asked about repairs"\n\n` +
+      `Just send me your request!`,
+      { parse_mode: 'Markdown' }
     );
   });
 
@@ -189,6 +200,110 @@ export function initializeTelegramBot() {
       await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
     } catch (error) {
       await bot?.sendMessage(chatId, '❌ Error fetching clients');
+    }
+  });
+
+  bot.onText(/\/list_vip/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+      const clients = await storage.getAllClients();
+      const vips = clients.filter(c => c.clientSegment === 'VIP' || c.status === 'vip' || c.priority === 'vip').slice(0, 20);
+      
+      if (vips.length === 0) {
+        await bot?.sendMessage(chatId, 'No VIP clients found.');
+        return;
+      }
+      
+      let response = `⭐ *VIP Clients* (${vips.length}):\n\n`;
+      vips.forEach((client, idx) => {
+        response += `${idx + 1}. ${client.name}\n`;
+        if (client.phone) response += `   📞 ${client.phone}\n`;
+        response += `   Status: ${client.status}\n`;
+        if (client.salesAssociate) response += `   SA: ${client.salesAssociate}\n`;
+        response += `\n`;
+      });
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      await bot?.sendMessage(chatId, '❌ Error fetching VIP clients');
+    }
+  });
+
+  bot.onText(/\/watch (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const reference = match?.[1];
+    
+    if (!reference) {
+      await bot?.sendMessage(chatId, 'Please provide a watch reference. Example: /watch 4500V/110A-B128');
+      return;
+    }
+    
+    try {
+      const watch = await storage.getWatchByReference(reference);
+      
+      if (!watch) {
+        await bot?.sendMessage(chatId, `❌ Watch ${reference} not found in catalog.`);
+        return;
+      }
+      
+      await storage.incrementWatchPopularity(watch.id);
+      
+      let response = `🕐 *${watch.model || watch.reference}*\n\n`;
+      response += `Reference: ${watch.reference}\n`;
+      if (watch.collectionName) response += `Collection: ${watch.collectionName}\n`;
+      if (watch.caseSize) response += `📏 Size: ${watch.caseSize}\n`;
+      if (watch.caseMaterial) response += `⚙️ Material: ${watch.caseMaterial}\n`;
+      if (watch.dialColor) response += `🎨 Dial: ${watch.dialColor}\n`;
+      if (watch.movementType) response += `⚡ Movement: ${watch.movementType}\n`;
+      if (watch.caliber) response += `🔧 Caliber: ${watch.caliber}\n`;
+      if (watch.powerReserve) response += `🔋 Power Reserve: ${watch.powerReserve}\n`;
+      if (watch.complications && watch.complications.length > 0) {
+        response += `✨ Complications: ${watch.complications.join(', ')}\n`;
+      }
+      if (watch.waterResistance) response += `💧 Water Resistance: ${watch.waterResistance}\n`;
+      if (watch.price) response += `💰 Price: ${watch.currency} ${watch.price.toLocaleString()}\n`;
+      if (watch.available !== undefined) response += `📦 ${watch.available ? '✅ Available' : '❌ Out of Stock'}\n`;
+      if (watch.description) response += `\n${watch.description}`;
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error fetching watch:', error);
+      await bot?.sendMessage(chatId, '❌ Error fetching watch information');
+    }
+  });
+
+  bot.onText(/\/faq (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const query = match?.[1];
+    
+    if (!query) {
+      await bot?.sendMessage(chatId, 'Please provide a search term. Example: /faq repair');
+      return;
+    }
+    
+    try {
+      const faqs = await storage.searchFaqs(query);
+      
+      if (faqs.length === 0) {
+        await bot?.sendMessage(chatId, `No FAQs found for "${query}". Try different keywords.`);
+        return;
+      }
+      
+      const topFaq = faqs[0];
+      await storage.incrementFaqUsage(topFaq.id);
+      
+      let response = `❓ *${topFaq.question}*\n\n`;
+      response += `📂 Category: ${topFaq.category}\n\n`;
+      response += `💬 Answer:\n${topFaq.answer}`;
+      
+      if (faqs.length > 1) {
+        response += `\n\n_Found ${faqs.length - 1} more related FAQ(s)_`;
+      }
+      
+      await safeSendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error searching FAQs:', error);
+      await bot?.sendMessage(chatId, '❌ Error searching FAQ database');
     }
   });
 
