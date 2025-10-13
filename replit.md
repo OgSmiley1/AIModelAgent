@@ -10,13 +10,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 13, 2025
+- **PostgreSQL Persistent Storage**: Migrated from in-memory to PostgreSQL database - all data now survives restarts
+- **Excel Import Optimization**: Refined import logic to filter MAAZ entries only, deduplicate by Client_ID+Watch_Reference pairs (223 unique clients from 298 rows)
+- **Watch Catalog Database**: Created comprehensive watch catalog with 6 Vacheron Constantin models including detailed specifications (case size, movement, complications, materials)
+- **FAQ/Knowledge Base**: Built FAQ database with 10 professional client service scripts covering repairs, warranty, product info, and sales scenarios
+- **Enhanced Telegram Bot**: Added advanced commands (/list_vip, /watch <reference>, /faq <query>) with AI-powered natural language support for watch and FAQ queries
+- **Data Persistence Verified**: E2E testing confirms 223 clients, 6 watches, and 10 FAQs persist across server restarts
+- **Robust Error Handling**: Implemented graceful fallback messaging when AI processing is unavailable
+
 ### October 11, 2025
-- **Excel Data Import**: Successfully imported 287 clients and 6 appointments from Vacheron Constantin V1 tracker workbook
+- **Excel Data Import**: Successfully imported client and appointment data from Vacheron Constantin V1 tracker workbook
 - **Appointment Reminders**: Added automated Telegram notification system that sends reminders 24 hours before appointments
 - **WhatsApp Removal**: Removed all WhatsApp features from the UI (menu items, status indicators, routes) - system now Telegram-focused only
-- **Data Source**: Application now uses Excel files (Airtable sheet for clients, Reminder_Automation for appointments) instead of mock data
 - **Telegram Bot**: Enhanced with Google Gemini AI for natural language command processing
-- **UI Updates**: Sidebar now shows "Telegram Bot: ● Active" status, updated client count to 287
+- **UI Updates**: Sidebar now shows "Telegram Bot: ● Active" status
 
 ## System Architecture
 
