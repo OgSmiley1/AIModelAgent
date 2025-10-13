@@ -422,6 +422,23 @@ Last mentioned client: ${context.lastClientName} (ID: ${context.lastClientId})
 When user says "his", "her", "them", "the client", "this client", or "the request", they mean: ${context.lastClientName}`;
     }
     
+    // Get watch and FAQ data for enhanced AI context
+    const watches = await storage.getAllWatches();
+    const faqs = await storage.getAllFaqs();
+    
+    const sampleWatches = watches.slice(0, 3).map(w => ({
+      reference: w.reference,
+      model: w.model,
+      collection: w.collectionName,
+      caseSize: w.caseSize,
+      price: w.price
+    }));
+    
+    const sampleFaqs = faqs.slice(0, 3).map(f => ({
+      category: f.category,
+      question: f.question
+    }));
+    
     // Use Gemini to understand the intent and extract parameters
     const systemPrompt = `You are an AI assistant for Vacheron Constantin luxury watch CRM. Analyze user requests and execute them.
 
@@ -429,6 +446,8 @@ UNDERSTANDING REQUESTS:
 - "Find client 108884411" or "Tell me about 108884411" → Search by name/phone/ID
 - "Update his/her status to X" → Update the LAST MENTIONED client's status
 - "Close the request" or "Close his/her request" → Update LAST MENTIONED client to changed_mind
+- "Tell me about watch 4500V" or "What's the price of Overseas" → Search watch catalog
+- "Client asked about repairs" or "What's the warranty policy" → Search FAQ database
 - Pronouns (his/her/them/the client) ALWAYS refer to the last mentioned client
 
 AVAILABLE ACTIONS:
@@ -437,6 +456,8 @@ AVAILABLE ACTIONS:
 3. UPDATE_CLIENT: Update client status, priority, or boutique associate
 4. CREATE_FOLLOWUP: Schedule a follow-up task
 5. STATS: Provide CRM statistics
+6. SEARCH_WATCH: Look up watch by reference, model, or collection name
+7. SEARCH_FAQ: Find FAQ/script by topic, category, or keywords
 
 CLIENT STATUSES: 
 - requested_callback (needs callback)
@@ -450,13 +471,20 @@ SEARCH LOGIC:
 - Client names often contain numbers like "Client 108884411"
 - Search by: exact name match, partial name, phone number, or ID
 - When user says "client 108884411", search for clients where name contains "108884411"
+- For watches: search by reference number, model name, or collection name
+- For FAQs: search by topic keywords, category, or question content
 
+DATA AVAILABLE:
 Total clients: ${clients.length}
-Sample data: ${JSON.stringify(sampleClients, null, 2)}${contextInfo}
+Total watches: ${watches.length}
+Total FAQs: ${faqs.length}
+Sample clients: ${JSON.stringify(sampleClients, null, 2)}
+Sample watches: ${JSON.stringify(sampleWatches, null, 2)}
+Sample FAQs: ${JSON.stringify(sampleFaqs, null, 2)}${contextInfo}
 
 Respond ONLY with valid JSON:
 {
-  "action": "QUERY_CLIENTS|GET_CLIENT|UPDATE_CLIENT|CREATE_FOLLOWUP|STATS",
+  "action": "QUERY_CLIENTS|GET_CLIENT|UPDATE_CLIENT|CREATE_FOLLOWUP|STATS|SEARCH_WATCH|SEARCH_FAQ",
   "params": {
     "clientId": "ID from context if using pronouns",
     "name": "partial or full client name",
@@ -465,7 +493,9 @@ Respond ONLY with valid JSON:
     "boutiqueSalesAssociateName": "...",
     "priority": "...",
     "type": "call|email|meeting",
-    "scheduledFor": "ISO date string"
+    "scheduledFor": "ISO date string",
+    "watchReference": "watch reference or model name",
+    "faqQuery": "FAQ search keywords"
   },
   "response": "user-friendly message"
 }`;
@@ -530,12 +560,20 @@ Respond ONLY with valid JSON:
       response: (error as any).response?.data
     });
     
-    // Handle API errors
+    // Handle API errors with helpful fallback
     if ((error as any).status === 429 || (error as any).code === 'rate_limit_exceeded') {
       return '⚠️ *API Rate Limit*\n\nPlease wait a moment and try again.';
     }
     
-    throw error;
+    // Provide helpful fallback when AI processing fails
+    return '⚠️ *AI Processing Unavailable*\n\n' +
+           'Try using direct commands:\n' +
+           '• `/list_vip` - List VIP clients\n' +
+           '• `/watch <reference>` - Get watch details\n' +
+           '• `/faq <query>` - Search knowledge base\n' +
+           '• `/stats` - View CRM statistics\n' +
+           '• `/help` - See all commands\n\n' +
+           `_Error: ${(error as any).message}_`;
   }
 }
 
@@ -714,6 +752,81 @@ async function executeAction(
         response += `🏪 Shared with Boutique: ${stats.shared_with_boutique}\n`;
         response += `❌ Changed Mind: ${stats.changed_mind}\n`;
         response += `⭐ VIP: ${stats.vip}\n`;
+        
+        return response;
+      }
+      
+      case 'SEARCH_WATCH': {
+        const reference = params.watchReference || params.search;
+        if (!reference) {
+          return `❌ Please specify a watch reference, model, or collection name.`;
+        }
+        
+        // Try exact reference match first
+        let watch = await storage.getWatchByReference(reference);
+        
+        // If not found, search by model or collection
+        if (!watch) {
+          const allWatches = await storage.getAllWatches();
+          watch = allWatches.find(w => 
+            w.model?.toLowerCase().includes(reference.toLowerCase()) ||
+            w.collectionName?.toLowerCase().includes(reference.toLowerCase()) ||
+            w.reference.toLowerCase().includes(reference.toLowerCase())
+          );
+        }
+        
+        if (!watch) {
+          return `❌ Watch "${reference}" not found in catalog. Try using the full reference number.`;
+        }
+        
+        await storage.incrementWatchPopularity(watch.id);
+        
+        let response = `🕐 *${watch.model || watch.reference}*\n\n`;
+        response += `Reference: ${watch.reference}\n`;
+        if (watch.collectionName) response += `Collection: ${watch.collectionName}\n`;
+        if (watch.caseSize) response += `📏 Size: ${watch.caseSize}\n`;
+        if (watch.caseMaterial) response += `⚙️ Material: ${watch.caseMaterial}\n`;
+        if (watch.dialColor) response += `🎨 Dial: ${watch.dialColor}\n`;
+        if (watch.movementType) response += `⚡ Movement: ${watch.movementType}\n`;
+        if (watch.caliber) response += `🔧 Caliber: ${watch.caliber}\n`;
+        if (watch.powerReserve) response += `🔋 Power Reserve: ${watch.powerReserve}\n`;
+        if (watch.complications && watch.complications.length > 0) {
+          response += `✨ Complications: ${watch.complications.join(', ')}\n`;
+        }
+        if (watch.waterResistance) response += `💧 Water Resistance: ${watch.waterResistance}\n`;
+        if (watch.price) response += `💰 Price: ${watch.currency} ${watch.price.toLocaleString()}\n`;
+        if (watch.available !== undefined) response += `📦 ${watch.available ? '✅ Available' : '❌ Out of Stock'}\n`;
+        if (watch.description) response += `\n${watch.description}`;
+        
+        if (aiResponse) response += `\n\n_${aiResponse}_`;
+        
+        return response;
+      }
+      
+      case 'SEARCH_FAQ': {
+        const query = params.faqQuery || params.search;
+        if (!query) {
+          return `❌ Please specify what FAQ topic you're looking for.`;
+        }
+        
+        const faqs = await storage.searchFaqs(query);
+        
+        if (faqs.length === 0) {
+          return `❌ No FAQs found for "${query}". Try different keywords like "repair", "warranty", "pricing", etc.`;
+        }
+        
+        const topFaq = faqs[0];
+        await storage.incrementFaqUsage(topFaq.id);
+        
+        let response = `❓ *${topFaq.question}*\n\n`;
+        response += `📂 Category: ${topFaq.category}\n\n`;
+        response += `💬 Answer:\n${topFaq.answer}`;
+        
+        if (faqs.length > 1) {
+          response += `\n\n_Found ${faqs.length - 1} more related FAQ(s). Try /faq for more._`;
+        }
+        
+        if (aiResponse) response += `\n\n_${aiResponse}_`;
         
         return response;
       }
