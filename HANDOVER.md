@@ -1,32 +1,39 @@
 # Vacheron Constantin CRM - Complete Handover Documentation
 
+**Last Updated:** October 13, 2025  
+**System Status:** ✅ Production Ready with Full Data Export Capability
+
 ## 🎯 Project Overview
 
 This is a comprehensive luxury CRM system built for Vacheron Constantin watch sales management. The system features:
 
-- **223 Real Clients** imported from Excel with full ownership tracking
-- **PostgreSQL Persistent Storage** - data survives all restarts
-- **Telegram Bot with AI** - Google Gemini-powered natural language processing
-- **Watch Catalog Database** - 6 Vacheron Constantin timepieces with detailed specs
+- **463 CRC Team Clients** (Maaz: 222, Riham: 136, Asma: 105) from Airtable
+- **295 Watch Catalog** with complete AED pricing from Collection tab
+- **PostgreSQL Persistent Storage** - all data survives restarts
+- **AI-Powered Telegram Bot** - Google Gemini natural language processing
+- **Data Export System** - Full JSON exports for ChatGPT/Manus AI integration
 - **FAQ/Knowledge Base** - 10 professional client service scripts
-- **Advanced Telegram Commands** - Watch lookups, FAQ searches, VIP filtering
-- **Automated Reminders** - 24-hour appointment notifications via Telegram
+- **Advanced Telegram Commands** - Ambassador-specific queries, watch searches, pricing
 
-## 📊 Current System Status
+## 📊 Current System Status (Verified via SQL)
 
-### Database Statistics (as of latest test)
-- **Total Clients:** 223 (deduplicated from 298 Excel rows)
-- **Watch Catalog:** 6 Vacheron Constantin watches
+### Database Statistics
+- **Total Clients:** 463 unique clients across 3 CRC ambassadors
+  - SHARIF Maaz: 222 clients
+  - TAHHAN Riham: 136 clients
+  - OMARI Asma: 105 clients
+- **Watch Catalog:** 295 Vacheron Constantin timepieces with AED pricing
 - **FAQ Database:** 10 professional service scripts
-- **Data Source:** Excel file (Vacheron Constantin V1 tracker - MAAZ entries only)
-- **Persistence:** ✅ All data stored in PostgreSQL and survives restarts
+- **Appointments:** 0 (booking system ready)
+- **Data Source:** `Vacheron_ConstantinFINAL_1760372461825.xlsm`
+- **Persistence:** ✅ All data in PostgreSQL, survives all restarts
 
 ### Import Details
-- **Source File:** `Vacheron Constantin V1.xlsx`
-- **Filter Logic:** Only includes rows where Sales Associate = "MAAZ"
-- **Deduplication:** Unique combinations of Client_ID + Watch_Reference
-- **Performance:** ~2.6 seconds for full import with database
-- **Auto-Import:** Runs on every server startup, skips duplicates
+- **Collection Tab:** 295 watches with references, AED prices, availability status
+- **Airtable Tab:** 463 clients filtered by Sales_Associate (MAAZ, ASMA, RIHAM)
+- **Filter Logic:** Case-insensitive matching on Sales_Associate column
+- **Deduplication:** By Client_ID + Sales_Associate combination
+- **Auto-Import:** Runs on server startup, updates existing records
 
 ## 🔧 Environment Setup
 
