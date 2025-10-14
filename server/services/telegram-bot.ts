@@ -65,6 +65,11 @@ export function initializeTelegramBot() {
       `*FAQ/Knowledge Base:*\n` +
       `/faq <query> - Search FAQ database\n` +
       `Example: /faq repair turnaround\n\n` +
+      `*Power Commands:*\n` +
+      `/status - Check system status\n` +
+      `/due - See today's follow-ups\n` +
+      `/lead <clientId> - Get client details\n` +
+      `Example: /lead 12345\n\n` +
       `*Natural Language (AI-Powered):*\n` +
       `📋 "Show me all VIP clients"\n` +
       `👤 "Tell me about Client #108884411"\n` +
@@ -413,6 +418,94 @@ export function initializeTelegramBot() {
     } catch (error) {
       console.error('Error fetching clients:', error);
       await bot?.sendMessage(chatId, '❌ Error fetching clients');
+    }
+  });
+
+  // Power commands for system status and actions
+  bot.onText(/\/status/, async (msg) => {
+    const chatId = msg.chat.id;
+    
+    try {
+      const status = {
+        telegram: !!TELEGRAM_BOT_TOKEN ? "✅ Active" : "❌ Inactive",
+        gemini: !!GOOGLE_API_KEY ? "✅ Active" : "❌ Inactive",
+        database: "✅ Connected",
+        timestamp: new Date().toISOString()
+      };
+      
+      let response = `🔧 *System Status*\n\n`;
+      response += `Telegram Bot: ${status.telegram}\n`;
+      response += `Gemini AI: ${status.gemini}\n`;
+      response += `Database: ${status.database}\n\n`;
+      response += `_Last checked: ${new Date().toLocaleString()}_`;
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error fetching status:', error);
+      await bot?.sendMessage(chatId, '❌ Error fetching system status');
+    }
+  });
+
+  bot.onText(/\/due/, async (msg) => {
+    const chatId = msg.chat.id;
+    
+    try {
+      const { getDueFollowupsToday } = await import('../storage/stats');
+      const dueFollowups = await getDueFollowupsToday();
+      
+      if (dueFollowups.length === 0) {
+        await bot?.sendMessage(chatId, '✅ No follow-ups due today!');
+        return;
+      }
+      
+      let response = `📋 *Follow-ups Due Today* (${dueFollowups.length}):\n\n`;
+      dueFollowups.slice(0, 15).forEach((followup, idx) => {
+        response += `${idx + 1}. `;
+        if (followup.type) response += `${followup.type} - `;
+        if (followup.notes) response += `${followup.notes.substring(0, 50)}${followup.notes.length > 50 ? '...' : ''}`;
+        response += `\n`;
+      });
+      
+      if (dueFollowups.length > 15) {
+        response += `\n_...and ${dueFollowups.length - 15} more_`;
+      }
+      
+      await safeSendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error fetching due followups:', error);
+      await bot?.sendMessage(chatId, '❌ Error fetching due follow-ups');
+    }
+  });
+
+  bot.onText(/\/lead (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const clientId = match?.[1];
+    
+    if (!clientId) {
+      await bot?.sendMessage(chatId, 'Please provide a client ID. Example: /lead 12345');
+      return;
+    }
+    
+    try {
+      const client = await storage.getClient(clientId);
+      
+      if (!client) {
+        await bot?.sendMessage(chatId, `❌ Client "${clientId}" not found`);
+        return;
+      }
+      
+      let response = `👤 *Client Profile*\n\n`;
+      response += `Name: ${client.name}\n`;
+      response += `Status: ${client.status}\n`;
+      if (client.leadScore) response += `Lead Score: ${client.leadScore}/100\n`;
+      if (client.conversionProbability) response += `Conversion Probability: ${(client.conversionProbability * 100).toFixed(0)}%\n`;
+      if (client.interests) response += `Interests: ${client.interests}\n`;
+      if (client.nextBestAction) response += `\n💡 Next Action: ${client.nextBestAction}`;
+      
+      await bot?.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error fetching client:', error);
+      await bot?.sendMessage(chatId, '❌ Error fetching client details');
     }
   });
 
