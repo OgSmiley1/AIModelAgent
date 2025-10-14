@@ -591,3 +591,24 @@ export type Watch = typeof watchCollection.$inferSelect;
 
 export type InsertFaq = z.infer<typeof insertFaqSchema>;
 export type Faq = typeof faqDatabase.$inferSelect;
+
+// Metrics Daily table for daily rollup analytics
+export const metricsDaily = pgTable("metrics_daily", {
+  day: text("day").primaryKey(), // Date in YYYY-MM-DD format
+  messages: integer("messages").default(0),
+  newClients: integer("new_clients").default(0),
+  updatedClients: integer("updated_clients").default(0),
+  conversions: integer("conversions").default(0),
+  avgResponseMin: real("avg_response_min"),
+  slaBreaches: integer("sla_breaches").default(0),
+  pendingFollowups: integer("pending_followups").default(0),
+  activeConversations: integer("active_conversations").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMetricsDailySchema = createInsertSchema(metricsDaily).omit({
+  createdAt: true,
+});
+
+export type InsertMetricsDaily = z.infer<typeof insertMetricsDailySchema>;
+export type MetricsDaily = typeof metricsDaily.$inferSelect;
