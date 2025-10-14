@@ -10,6 +10,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 14, 2025
+- **Advanced Analytics & SLA Monitoring**: Created dedicated stats module (server/storage/stats.ts) with Drizzle-based queries replacing in-memory storage
+- **System Health Endpoints**: Added GET /api/status for integration health checks and GET /api/actions/next for daily action recommendations
+- **SLA Breach Detection**: Implemented 24-hour SLA tracking with visual warning banner on dashboard when conversations go unresponded
+- **Telegram Power Commands**: Added /status (system health), /due (pending followups), /lead <clientId> (lead details) commands
+- **Daily Metrics Rollup**: Created metrics_daily table and jobs/daily-rollup.ts script for historical analytics persistence
+- **Dashboard Enhancements**: Added SLA warning banner and Next Actions widget showing due followups and new client contacts
+- **Defensive Rendering**: Updated frontend with optional chaining and safe defaults to prevent crashes on missing data
+- **E2E Testing**: Verified dashboard renders correctly with all new analytics features and no JavaScript errors
+
 ### October 13, 2025
 - **PostgreSQL Persistent Storage**: Migrated from in-memory to PostgreSQL database - all data now survives restarts
 - **Excel Import Optimization**: Refined import logic to filter MAAZ entries only, deduplicate by Client_ID+Watch_Reference pairs (223 unique clients from 298 rows)
