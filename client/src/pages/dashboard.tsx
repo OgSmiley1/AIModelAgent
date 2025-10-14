@@ -121,8 +121,45 @@ export default function Dashboard() {
                 />
               )}
               
+              {/* SLA Warning Banner */}
+              {stats && stats.slaBreaches > 0 && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6" data-testid="sla-warning-banner">
+                  <div className="flex items-center gap-2">
+                    <span className="text-destructive font-semibold">⚠️ SLA Breach Alert</span>
+                    <span className="text-sm text-muted-foreground">
+                      {stats.slaBreaches} conversation{stats.slaBreaches > 1 ? 's' : ''} waiting over 24 hours for response
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Stats Cards */}
               {stats && <StatsCards stats={stats} />}
+              
+              {/* Next Actions Widget */}
+              {stats && (stats.pendingFollowups > 0 || stats.newClients > 0) && (
+                <Card className="border-blue-500/20 bg-gradient-to-r from-blue-950/20 to-background" data-testid="next-actions-widget">
+                  <CardHeader>
+                    <CardTitle className="text-blue-400">📋 Next Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {stats.pendingFollowups > 0 && (
+                        <div className="flex items-center justify-between p-2 rounded bg-blue-500/10">
+                          <span className="text-sm">Follow-ups due today</span>
+                          <span className="font-semibold text-blue-400">{stats.pendingFollowups}</span>
+                        </div>
+                      )}
+                      {stats.newClients > 0 && (
+                        <div className="flex items-center justify-between p-2 rounded bg-green-500/10">
+                          <span className="text-sm">New clients to contact</span>
+                          <span className="font-semibold text-green-400">{stats.newClients}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               
               {/* Quick Actions Panel */}
               <Card className="luxury-card border-primary/20 bg-gradient-to-r from-primary/5 to-background">
