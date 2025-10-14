@@ -60,7 +60,8 @@ export default function AdvancedAI() {
   // Authentication mutation
   const authenticateMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      return apiRequest('POST', '/api/auth/advanced-ai', credentials);
+      const res = await apiRequest('POST', '/api/auth/advanced-ai', credentials);
+      return res.json();
     },
     onSuccess: (response: any) => {
       setIsAuthenticated(true);
@@ -95,7 +96,8 @@ export default function AdvancedAI() {
       aiModel?: 'openai' | 'gemini';
       userKnowledge?: string[];
     }) => {
-      return apiRequest('POST', '/api/advanced-ai/process', messageData);
+      const res = await apiRequest('POST', '/api/advanced-ai/process', messageData);
+      return res.json();
     },
     onSuccess: (response: any) => {
       const assistantMessage: AdvancedMessage = {
@@ -126,7 +128,8 @@ export default function AdvancedAI() {
       background: string; 
       goals: string[] 
     }) => {
-      return apiRequest('POST', '/api/advanced-ai/analyze-psychology', data);
+      const res = await apiRequest('POST', '/api/advanced-ai/analyze-psychology', data);
+      return res.json();
     },
     onSuccess: (response: any) => {
       const analysisMessage: AdvancedMessage = {
@@ -148,7 +151,8 @@ export default function AdvancedAI() {
       context: string;
       techniques: string[];
     }) => {
-      return apiRequest('POST', '/api/advanced-ai/generate-content', data);
+      const res = await apiRequest('POST', '/api/advanced-ai/generate-content', data);
+      return res.json();
     },
     onSuccess: (response: any) => {
       const contentMessage: AdvancedMessage = {

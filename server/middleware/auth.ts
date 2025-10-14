@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { verifyAA } from '../auth/token';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -26,14 +27,24 @@ export const authenticateAdvancedAI = (req: AuthenticatedRequest, res: Response,
   }
 };
 
-// Middleware to check if user is authenticated for advanced features
+// Middleware to check if user is authenticated for advanced features using JWT
 export const requireAdvancedAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  if (req.user && req.user.accessLevel === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ 
+  const bearer = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.slice(7)
+    : undefined;
+  const token = req.cookies?.aauth || bearer;
+  const claims = verifyAA(token);
+  
+  if (!claims || claims.scope !== "advanced-ai") {
+    return res.status(403).json({ 
       error: 'Advanced AI access denied',
       message: 'Admin privileges required'
     });
   }
+  
+  req.user = {
+    username: claims.sub,
+    accessLevel: 'admin'
+  };
+  next();
 };

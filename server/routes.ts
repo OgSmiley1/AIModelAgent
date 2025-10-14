@@ -8,6 +8,7 @@ import { salesForecastingService } from "./services/sales-forecasting";
 import { AIAgentService } from "./services/ai-agent";
 import { AdvancedAI } from "./services/advanced-ai";
 import { authenticateAdvancedAI, requireAdvancedAuth, AuthenticatedRequest } from "./middleware/auth";
+import { signAA } from "./auth/token";
 import { initializeWebSocket } from "./services/websocket";
 import { initializeGitHubService, getGitHubService } from "./services/github-service";
 import { selfEditingService } from "./services/self-editing-service";
@@ -1695,6 +1696,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Advanced AI Authentication Route
   app.post("/api/auth/advanced-ai", authenticateAdvancedAI, (req: AuthenticatedRequest, res) => {
+    // Issue JWT cookie for persistent authentication
+    const token = signAA(req.user!.username);
+    res.cookie("aauth", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 12 * 60 * 60 * 1000 // 12 hours
+    });
+    
     res.json({
       success: true,
       message: "Advanced AI access granted",
@@ -1710,7 +1720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Advanced AI Processing Routes
-  app.post("/api/advanced-ai/process", async (req: AuthenticatedRequest, res) => {
+  app.post("/api/advanced-ai/process", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { 
         message, 
@@ -1744,7 +1754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Client Psychology Analysis Route
-  app.post("/api/advanced-ai/analyze-psychology", async (req: AuthenticatedRequest, res) => {
+  app.post("/api/advanced-ai/analyze-psychology", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { clientId, background, goals } = req.body;
       
@@ -1776,7 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Persuasive Content Generation Route
-  app.post("/api/advanced-ai/generate-content", async (req: AuthenticatedRequest, res) => {
+  app.post("/api/advanced-ai/generate-content", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { target, objective, context, techniques = [] } = req.body;
       

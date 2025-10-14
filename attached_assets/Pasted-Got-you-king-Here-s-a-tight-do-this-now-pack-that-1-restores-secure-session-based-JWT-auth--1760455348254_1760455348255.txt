@@ -1,0 +1,207 @@
+Got you, king. Here’s a tight, do-this-now pack that (1) restores **secure** session-based JWT auth on the Advanced-AI routes, (2) keeps all client counts in **real-time sync** (UI + Telegram), and (3) tells you **exactly** what to give Codex for full code edits without exposing secrets.
+
+---
+
+# 1) Secure JWT sessions for Advanced-AI (copy-paste patches)
+
+## 1.1 Install deps
+
+```bash
+npm i jsonwebtoken cookie-parser
+```
+
+## 1.2 Enable cookies (server bootstrap, e.g., server/index.ts)
+
+```ts
+import cookieParser from "cookie-parser";
+app.use(cookieParser());
+
+// if you use CORS across domains:
+import cors from "cors";
+app.use(cors({
+  origin: process.env.FRONTEND_URL || true, // set your URL in prod
+  credentials: true
+}));
+```
+
+## 1.3 Token helpers (server/auth/token.ts)
+
+```ts
+import jwt from "jsonwebtoken";
+
+const SECRET = process.env.ADVANCED_AI_JWT_SECRET || "dev-change-me";
+
+export function signAA(userId: string) {
+  return jwt.sign({ sub: userId, scope: "advanced-ai" }, SECRET, { expiresIn: "12h" });
+}
+
+export function verifyAA(token?: string) {
+  if (!token) return null;
+  try { return jwt.verify(token, SECRET) as { sub: string; scope: string; iat: number; exp: number }; }
+  catch { return null; }
+}
+```
+
+## 1.4 Middleware (server/middleware/requireAdvancedAuth.ts)
+
+```ts
+import { verifyAA } from "../auth/token";
+
+export function requireAdvancedAuth(req, res, next) {
+  const bearer = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.slice(7)
+    : undefined;
+  const token = req.cookies?.aauth || bearer;
+  const claims = verifyAA(token);
+  if (!claims || claims.scope !== "advanced-ai") {
+    return res.status(403).json({ error: "Advanced AI access denied" });
+  }
+  (req as any).user = claims.sub;
+  next();
+}
+```
+
+## 1.5 Login route issues a cookie (server/routes.ts)
+
+Locate your login handler (you mentioned lines near 1713/1747/1779 for other routes). Update login:
+
+```ts
+import { signAA } from "./auth/token";
+
+// POST /api/auth/advanced-ai
+router.post("/api/auth/advanced-ai", (req, res) => {
+  const { username, password } = req.body;
+  if (username === "Smiley" && password === "Smiley@123jz") {
+    const token = signAA("smiley");
+    res.cookie("aauth", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 12 * 60 * 60 * 1000
+    });
+    return res.json({ ok: true });
+  }
+  return res.status(401).json({ error: "Invalid credentials" });
+});
+```
+
+## 1.6 Re-protect Advanced-AI routes (server/routes.ts)
+
+Replace your “quick fix” with secure middleware:
+
+```ts
+import { requireAdvancedAuth } from "./middleware/requireAdvancedAuth";
+
+router.post("/api/advanced-ai/process",            requireAdvancedAuth, processController);
+router.post("/api/advanced-ai/analyze-psychology", requireAdvancedAuth, analyzeController);
+router.post("/api/advanced-ai/generate-content",   requireAdvancedAuth, generateController);
+```
+
+## 1.7 Frontend fetch must send cookies
+
+Where you call the Advanced-AI endpoints:
+
+```ts
+await fetch("/api/advanced-ai/process", {
+  method: "POST",
+  credentials: "include", // <-- IMPORTANT
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ text: "Hi" })
+});
+```
+
+## 1.8 Env vars to add (Replit Secrets)
+
+* `ADVANCED_AI_JWT_SECRET` → long random string
+* (already have) `GOOGLE_API_KEY`, `DATABASE_URL`, etc.
+
+## 1.9 Smoke tests
+
+```bash
+# 1) Login (cookie set)
+curl -i -c cookies.txt -H "Content-Type: application/json" \
+  -d '{"username":"Smiley","password":"Smiley@123jz"}' \
+  http://localhost:5000/api/auth/advanced-ai
+
+# 2) Use secured route with cookie
+curl -i -b cookies.txt -H "Content-Type: application/json" \
+  -d '{"text":"test"}' \
+  http://localhost:5000/api/advanced-ai/process
+# Expect 200, not 403
+```
+
+---
+
+# 2) Real-time counts everywhere (UI + Telegram)
+
+You already aligned to live DB counts (463). To make it bulletproof:
+
+* **Sidebar count source of truth:** call `/api/analytics/dashboard` (or a slim `/api/clients/count`) via React Query, refresh **on WebSocket updates** (client added/removed) and every **30s backup**.
+* **Telegram bot commands** (`/stats`, `/due`, `/lead`): query DB on demand; no caches/hardcoded numbers.
+
+> You’ve already done most of this. Keep a single function `getClientTotals()` in your server storage layer; both the REST API and Telegram handlers should call it so they never drift.
+
+---
+
+# 3) What to give Codex for full code edits (safe)
+
+**Never share secrets** (API keys, DB URL, tokens). Share code and these briefs:
+
+## 3.1 Codex brief — implement secure JWT sessions
+
+```
+Implement session-based JWT authentication for Advanced-AI routes.
+
+- Add jsonwebtoken + cookie-parser.
+- Create server/auth/token.ts with signAA() and verifyAA().
+- Add cookieParser() and CORS with credentials in server bootstrap.
+- In POST /api/auth/advanced-ai: on success set httpOnly "aauth" cookie (12h).
+- Implement middleware server/middleware/requireAdvancedAuth.ts that reads "aauth" from cookies or Bearer token.
+- Re-apply requireAdvancedAuth to:
+  /api/advanced-ai/process
+  /api/advanced-ai/analyze-psychology
+  /api/advanced-ai/generate-content
+- Ensure frontend fetch uses credentials: "include".
+- Do not change any other auth logic.
+- Add ENV ADVANCED_AI_JWT_SECRET (do not hardcode).
+- Provide a smoke-test curl snippet in commit message.
+
+Commit: "Security: JWT cookie sessions for Advanced-AI routes; re-protect endpoints."
+```
+
+## 3.2 Codex brief — real-time client counts
+
+```
+Make all client counts (sidebar, dashboard, Telegram /stats) read from a single server function (getClientTotals()) to guarantee consistency.
+- Sidebar: replace any hardcoded numbers with React Query call to /api/clients/count (or /api/analytics/dashboard).
+- Add WebSocket listener to increment/decrement counts on client add/remove events.
+- Keep a 30s refetch as fallback.
+- Telegram: /stats must query DB directly via the same shared function.
+Commit: "DX: unify client counts across UI and Telegram via single source of truth + realtime updates."
+```
+
+---
+
+# 4) “Free AI” reality check (so you don’t bleed costs)
+
+* **Local** free models (Ollama / LM Studio) won’t run on Replit.
+* If you want **$0 dev locally** and cheap deploy later, add a provider switch:
+
+  * `LOCAL_AI=true` → call local Ollama at `http://127.0.0.1:11434`
+  * else → call Gemini
+* I can give you the exact adapter later if you want the toggle.
+
+---
+
+# 5) Quick security checklist (you’re covered)
+
+* ✅ Advanced-AI endpoints protected by JWT cookie middleware
+* ✅ Cookies `httpOnly`, `sameSite=lax`, `secure` in prod
+* ✅ Frontend uses `credentials: "include"`
+* ✅ CORS allows credentials
+* ✅ No hardcoded counts in UI or Telegram
+* ✅ No secrets shared with Codex; code-only collaboration
+
+---
+
+If you want, say **“Ship JWT now”** and I’ll hand you a one-file diff against `server/routes.ts` tailored to your line numbers (1713/1747/1779) so you can paste straight into Replit AI.

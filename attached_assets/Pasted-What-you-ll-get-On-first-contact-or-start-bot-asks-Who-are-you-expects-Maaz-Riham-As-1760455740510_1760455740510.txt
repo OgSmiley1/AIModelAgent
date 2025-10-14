@@ -1,0 +1,266 @@
+What you’ll get
+
+On first contact (or /start), bot asks:
+
+“Who are you?” → expects Maaz / Riham / Asma
+
+“Password?” → expects 12001
+
+If correct, the bot binds this Telegram chat to that ambassador.
+
+All bot commands thereafter filter by that ambassador (only show/update their clients).
+
+Command /switch lets you re-identify (e.g., change from Maaz to Riham).
+
+1) Minimal DB support
+
+If you already store client ownership (e.g., clients.owner = 'Maaz'|'Riham'|'Asma'), you only need a chat binding table:
+
+-- Bind Telegram chat to an ambassador
+create table if not exists telegram_ambassadors (
+  chat_id      bigint primary key,
+  ambassador   text not null check (ambassador in ('Maaz','Riham','Asma')),
+  bound_at     timestamptz not null default now()
+);
+
+
+If your clients table doesn’t have owner, add one:
+
+alter table clients add column if not exists owner text;
+-- And optionally: check constraint:
+-- alter table clients add constraint clients_owner_chk check (owner in ('Maaz','Riham','Asma'));
+
+2) Telegraf session + identification flow (TypeScript)
+// server/services/telegram-bot.ts
+import { Telegraf, session } from "telegraf";
+import { Pool } from "pg";
+
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!);
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+type Amb = "Maaz" | "Riham" | "Asma";
+const AMBASSADORS: Amb[] = ["Maaz", "Riham", "Asma"];
+const PASSWORD = "12001"; // per your request
+
+// Simple in-memory session (per-process). For multi-instance, use Redis.
+bot.use(session<{ step?: "askName"|"askPass"; candidateAmb?: Amb }>())
+
+// Helpers
+async function getChatAmbassador(chatId: number): Promise<Amb | null> {
+  const { rows } = await pool.query(
+    "select ambassador from telegram_ambassadors where chat_id = $1",
+    [chatId]
+  );
+  return rows[0]?.ambassador ?? null;
+}
+
+async function setChatAmbassador(chatId: number, ambassador: Amb): Promise<void> {
+  await pool.query(
+    `insert into telegram_ambassadors (chat_id, ambassador)
+     values ($1, $2)
+     on conflict (chat_id) do update set ambassador = excluded.ambassador, bound_at = now()`,
+    [chatId, ambassador]
+  );
+}
+
+// Middleware: ensure chat is bound to an ambassador
+async function requireAmbassador(ctx, next) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  const amb = await getChatAmbassador(chatId);
+  if (!amb) {
+    await ctx.reply("Welcome 👋 Please tell me who you are (Maaz / Riham / Asma):");
+    ctx.session.step = "askName";
+    return;
+  }
+  ctx.state.ambassador = amb as Amb;
+  return next();
+}
+
+// Start / First message
+bot.start(async (ctx) => {
+  const chatId = ctx.chat.id;
+  const amb = await getChatAmbassador(chatId);
+  if (amb) {
+    await ctx.reply(`Hello ${amb}! You’re already verified. Use /help to see commands.`);
+  } else {
+    await ctx.reply("Welcome 👋 Please tell me who you are (Maaz / Riham / Asma):");
+    ctx.session.step = "askName";
+  }
+});
+
+// Generic text handler for onboarding steps
+bot.on("text", async (ctx, next) => {
+  const text = (ctx.message?.text || "").trim();
+  const step = ctx.session.step;
+
+  // If we’re mid-onboarding, handle steps
+  if (step === "askName") {
+    const name = (text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()) as Amb;
+    if (!AMBASSADORS.includes(name)) {
+      await ctx.reply("Please reply with one of: Maaz, Riham, Asma.");
+      return;
+    }
+    ctx.session.candidateAmb = name;
+    ctx.session.step = "askPass";
+    await ctx.reply("Password?");
+    return;
+  }
+
+  if (step === "askPass") {
+    if (text !== PASSWORD) {
+      await ctx.reply("Incorrect password. Try again. Password?");
+      return;
+    }
+    const finalAmb = ctx.session.candidateAmb!;
+    await setChatAmbassador(ctx.chat.id, finalAmb);
+    ctx.session.step = undefined;
+    ctx.session.candidateAmb = undefined;
+    await ctx.reply(`✅ Verified as ${finalAmb}. Your data is now scoped to your clients only.`);
+    return;
+  }
+
+  // If no onboarding in progress, continue down the stack
+  return next();
+});
+
+// Allow switching ambassador
+bot.command("switch", async (ctx) => {
+  await ctx.reply("Okay, who are you now? (Maaz / Riham / Asma)");
+  ctx.session.step = "askName";
+  ctx.session.candidateAmb = undefined;
+});
+
+// Example: stats (scoped)
+bot.command("stats", requireAmbassador, async (ctx) => {
+  const amb: Amb = ctx.state.ambassador;
+  // Example: totals per owner
+  const { rows } = await pool.query(`
+    select
+      count(*)::int as total,
+      sum(case when status = 'Requested Callback' then 1 else 0 end)::int as requested_callback,
+      sum(case when status = 'Changed Mind'       then 1 else 0 end)::int as changed_mind,
+      sum(case when status = 'Sold'               then 1 else 0 end)::int as sold
+    from clients
+    where owner = $1
+  `, [amb]);
+
+  const r = rows[0] || { total: 0, requested_callback: 0, changed_mind: 0, sold: 0 };
+  await ctx.reply(
+    `📊 ${amb} — Your client stats\n` +
+    `Total: ${r.total}\nRequested Callback: ${r.requested_callback}\nSold: ${r.sold}\nChanged Mind: ${r.changed_mind}`
+  );
+});
+
+// Example: due follow-ups (scoped)
+bot.command("due", requireAmbassador, async (ctx) => {
+  const amb: Amb = ctx.state.ambassador;
+  const { rows } = await pool.query(`
+    select client_id, scheduled_for
+    from followups
+    where completed = false
+      and scheduled_for::date = current_date
+      and owner = $1
+    order by scheduled_for asc
+    limit 20
+  `, [amb]);
+
+  if (!rows.length) return ctx.reply(`✅ No follow-ups today for ${amb}.`);
+  const lines = rows.map(r => `• ${r.client_id} at ${new Date(r.scheduled_for).toLocaleTimeString()}`);
+  await ctx.reply(`🗓️ Today's follow-ups (${amb}):\n${lines.join("\n")}`);
+});
+
+// Example: lead lookup (scoped)
+bot.command("lead", requireAmbassador, async (ctx) => {
+  const amb: Amb = ctx.state.ambassador;
+  const id = (ctx.message?.text || "").split(" ")[1];
+  if (!id) return ctx.reply("Usage: /lead <clientId>");
+  const { rows } = await pool.query(`
+    select id, name, status, owner, updated_at
+    from clients
+    where id = $1 and owner = $2
+    limit 1
+  `, [id, amb]);
+  const c = rows[0];
+  if (!c) return ctx.reply("Client not found (or not yours).");
+  await ctx.reply(
+    `👤 ${c.name} [${c.id}]\n` +
+    `Status: ${c.status}\nOwner: ${c.owner}\nUpdated: ${new Date(c.updated_at).toLocaleString()}`
+  );
+});
+
+export function startTelegramBot() {
+  bot.launch();
+  console.log("Telegram bot started");
+}
+
+
+Notes
+
+This uses per-chat binding: one Telegram chat → one ambassador.
+
+All queries include where owner = $1 with the bound ambassador.
+
+/switch lets you rebind quickly.
+
+3) Frontend/API alignment (optional but recommended)
+
+If your web dashboard also exposes bot-like actions via REST, add the same scoping middleware there:
+
+Derive ambassador from:
+
+(A) JWT on web (already added in your last change), or
+
+(B) A chatId → ambassador lookup if requests include a Telegram chat id.
+
+Then every list/update route adds WHERE owner = :ambassador.
+
+Example Express middleware:
+
+// server/middleware/scopeByAmbassador.ts
+export function scopeByAmbassador(req, res, next) {
+  // If you use JWT on web, set req.user.ambassador when issuing the token.
+  const amb = (req as any).user?.ambassador;
+  if (!amb) return res.status(403).json({ error: "Ambassador scope missing" });
+  (req as any).ambassador = amb;
+  next();
+}
+
+
+Then in handlers: pass req.ambassador into queries to filter by owner.
+
+4) What to tell Codex (one-shot brief)
+Add Telegram identification & scoping:
+- On /start (or first message), ask for ambassador name (Maaz/Riham/Asma), then ask for password 12001.
+- If correct, persist binding in table telegram_ambassadors(chat_id, ambassador).
+- Implement /switch to re-identify.
+- Create middleware requireAmbassador that reads binding and injects ctx.state.ambassador.
+- Update commands /stats, /due, /lead so queries filter by owner = ctx.state.ambassador.
+- Do NOT expose other owners’ data.
+
+SQL:
+create table if not exists telegram_ambassadors (
+  chat_id bigint primary key,
+  ambassador text not null check (ambassador in ('Maaz','Riham','Asma')),
+  bound_at timestamptz not null default now()
+);
+
+Use Telegraf with session for the two-step onboarding (name -> password).
+Commit: "Telegram: ambassador onboarding + per-owner scoping for all commands."
+
+5) Quick test (60 seconds)
+
+Send /start → bot asks for name.
+
+Reply Maaz → bot asks for password.
+
+Reply 12001 → “Verified as Maaz…”
+
+/stats → returns only Maaz’s counts.
+
+/due → shows only Maaz’s follow-ups.
+
+/switch → repeat flow, bind to Riham, verify scoping changed.
+
+If you want me to tailor the SQL to your exact column names (e.g., owner_name, followups.owner), just drop those names and I’ll adjust the queries precisely.
