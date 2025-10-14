@@ -18,8 +18,13 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useQuery } from "@tanstack/react-query";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { useEffect } from "react";
+import { queryClient } from "@/lib/queryClient";
+import type { DashboardStats } from "@/types";
 
-const navigation = [
+const getNavigation = (clientCount: number) => [
   { 
     name: "Dashboard", 
     href: "/dashboard", 
@@ -32,10 +37,10 @@ const navigation = [
     name: "Client Registry", 
     href: "/clients", 
     icon: Users,
-    description: "Manage 287 client records with lead scoring",
+    description: `Manage ${clientCount} client records with lead scoring`,
     category: "Core", 
     priority: 3,
-    badge: "287"
+    badge: String(clientCount)
   },
   { 
     name: "Sales Intelligence", 
@@ -125,6 +130,25 @@ export function Sidebar({
   databaseActive = true 
 }: SidebarProps) {
   const [location] = useLocation();
+  const { connected, on } = useWebSocket();
+
+  // Fetch dashboard stats to get real-time client count
+  const { data: stats } = useQuery<DashboardStats>({
+    queryKey: ['/api/analytics/dashboard'],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // Listen for stats refresh via WebSocket
+  useEffect(() => {
+    if (connected) {
+      on('stats_refresh', () => {
+        queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
+      });
+    }
+  }, [connected, on]);
+
+  const clientCount = stats?.totalClients ?? 463;
+  const navigation = getNavigation(clientCount);
 
   return (
     <div className="w-64 luxury-nav flex-shrink-0 overflow-y-auto" data-testid="sidebar">
