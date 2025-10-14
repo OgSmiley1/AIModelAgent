@@ -1,0 +1,138 @@
+King 👑 — approved. This plan matches exactly what you asked: fix the crash, harden the API, and add smart features that help you today (SLA guard, actions list, Telegram cmds, daily rollups). Here are the straight-to-execution instructions you (or Replit AI) can follow.
+
+⸻
+
+🔧 Implementation Instructions (in order)
+
+0) Prereqs
+	•	Stack: Drizzle ORM + Neon (Postgres), polling Telegram bot.
+	•	Ensure Replit Secrets include:
+DATABASE_URL, GEMINI_API_KEY, GOOGLE_API_KEY, TELEGRAM_ADMIN_CHAT_ID, (AIRTABLE_API_KEY, AIRTABLE_BASE_ID if used).
+
+⸻
+
+1) Backend fixes (stop the crash + real stats)
+	1.	Create/Update server/storage/stats.ts with Drizzle queries for:
+	•	getDashboardStats()
+	•	getDueFollowupsToday()
+	•	getHotLeads(minScore=70)
+	•	getDanglingConversations(hours=48)
+	2.	Patch server/routes.ts:
+	•	GET /api/analytics/dashboard → always return safe defaults (?? 0 / "N/A").
+	•	GET /api/actions/next → { due, hot, dangling }.
+	•	GET /api/status → { telegram, gemini, airtable, db, timestamp }.
+
+Outcome: frontend always gets valid values (no more undefined.toString).
+
+⸻
+
+2) Frontend hardening (no crashes, clearer info)
+	1.	Create client/src/components/dashboard/StatsCard.tsx with defensive rendering (stringify safe).
+	2.	Update dashboard page:
+	•	Replace direct .toString() usage with <StatsCard label="…" value={stats?.field} />.
+	•	Add SLA banner (<SlaBanner slaBreaches={stats?.slaBreaches} />) and link it to a filtered list.
+	3.	(Dev only) Set vite.config.ts → server.hmr.overlay=false to avoid blocking overlay while coding.
+
+Outcome: stats cards never crash; SLA issues are visible.
+
+⸻
+
+3) Telegram power commands
+
+Update server/services/telegram-bot.ts (polling):
+	•	/status → calls /api/status and replies with a service summary.
+	•	/due → calls /api/actions/next and lists today’s follow-ups.
+	•	/lead <clientId> → fetches a client card (use your existing client route).
+
+Outcome: you manage day-to-day from your phone.
+
+⸻
+
+4) Daily metrics rollups (trends + growth%)
+	1.	Create table metrics_daily in Neon:
+
+create table if not exists metrics_daily (
+  day date primary key,
+  messages int not null default 0,
+  new_clients int not null default 0,
+  conversions int not null default 0,
+  avg_response_min numeric
+);
+
+
+	2.	Add job jobs/daily-rollup.ts to upsert yesterday’s metrics.
+	3.	package.json → "cron:rollup": "tsx jobs/daily-rollup.ts".
+	4.	Replit Scheduler → run daily.
+	5.	In /api/analytics/dashboard, compute messageGrowth by comparing today vs yesterday in metrics_daily.
+
+Outcome: meaningful growth %, clean charts, stable historical stats.
+
+⸻
+
+🧪 Quick test checklist
+
+Server
+
+curl -s http://localhost:5000/api/analytics/dashboard | jq
+curl -s http://localhost:5000/api/actions/next | jq
+curl -s http://localhost:5000/api/status | jq
+
+	•	Expect numbers/strings (no null unless by design).
+
+UI
+	•	Dashboard loads, no overlay error.
+	•	Tiles show values even when zero.
+	•	SLA banner appears only if slaBreaches > 0.
+
+Telegram
+	•	/status → shows services OK/disabled.
+	•	/due → lists today’s follow-ups (or “None”).
+	•	/lead 123 → compact client card (adapt route as needed).
+
+⸻
+
+🤖 One-shot prompts for Replit AI
+
+A. Backend & storage
+
+Create/replace server/storage/stats.ts with Drizzle queries for:
+- getDashboardStats (today counts, avg first response, SLA breaches)
+- getDueFollowupsToday
+- getHotLeads(70)
+- getDanglingConversations(48)
+
+Patch server/routes.ts to add:
+- GET /api/analytics/dashboard  (return safe defaults)
+- GET /api/actions/next         (due, hot, dangling)
+- GET /api/status               (telegram/gemini/airtable/db/timestamp)
+Show diffs and run typecheck.
+
+B. Frontend
+
+Add client/src/components/dashboard/StatsCard.tsx that stringifies safe values.
+Update dashboard page to use StatsCard and add SlaBanner(slaBreaches).
+Remove any .toString() directly on stats fields. Show diffs.
+
+C. Daily rollup
+
+Create jobs/daily-rollup.ts to upsert metrics_daily (messages, new_clients, conversions=0, avg_response_min).
+Add "cron:rollup" script to package.json.
+Do not auto-run; just show the script and instructions.
+
+D. Telegram
+
+In server/services/telegram-bot.ts, add commands:
+- /status (hits /api/status)
+- /due (hits /api/actions/next, list today)
+- /lead <clientId> (uses existing /api/clients/:id)
+Show diffs.
+
+
+⸻
+
+✅ Approval
+
+Approved as requested.
+This plan delivers: crash fix, robust API, action-oriented dashboard, SLA guard, Telegram control, and reliable trends. If any table/column name in your Drizzle schema differs (e.g., scheduled_for vs scheduledFor, created_at vs createdAt), send me schema.ts and I’ll hand you exact, line-perfect queries.
+
+You’ve got this, king. 👑

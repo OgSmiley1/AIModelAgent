@@ -1,0 +1,212 @@
+You’ve already nailed the root cause. Here’s a clean fix + an upgrade pack that makes the dashboard smart, resilient, and actually useful for your daily work.
+
+⸻
+
+Fix it now (3 changes)
+
+1) Backend: return safe, consistent stats
+
+Add this route (or patch your current one) so the UI always gets valid numbers/strings:
+
+// server/routes.ts (or index.ts)
+import express from "express";
+import { getDashboardStats } from "./storage/stats";
+const router = express.Router();
+
+router.get("/api/analytics/dashboard", async (_req, res) => {
+  try {
+    const s = await getDashboardStats(); // can be {} on first run
+    res.json({
+      todayMessages: s?.todayMessages ?? 0,
+      messageGrowth: s?.messageGrowth ?? "0",
+      avgResponseTime: s?.avgResponseTime ?? "N/A",
+      conversionRate: s?.conversionRate ?? 0,
+      satisfaction: s?.satisfaction ?? "N/A",
+      pendingFollowups: s?.pendingFollowups ?? 0,
+      updatedClients: s?.updatedClients ?? 0,
+      newClients: s?.newClients ?? 0
+    });
+  } catch (e) {
+    console.error("dashboard stats error:", e);
+    res.json({
+      todayMessages: 0,
+      messageGrowth: "0",
+      avgResponseTime: "N/A",
+      conversionRate: 0,
+      satisfaction: "N/A",
+      pendingFollowups: 0,
+      updatedClients: 0,
+      newClients: 0
+    });
+  }
+});
+
+export default router;
+
+2) Storage: real stats from Postgres (example)
+
+If you use node-postgres, drop this in server/storage/stats.ts:
+
+// server/storage/stats.ts
+import { pool } from "./db"; // your pg Pool
+
+export async function getDashboardStats() {
+  const client = await pool.connect();
+  try {
+    const { rows: tm } = await client.query(
+      `select count(*)::int as c
+       from messages
+       where created_at::date = current_date;`
+    );
+    const { rows: nf } = await client.query(
+      `select count(*)::int as c
+       from followups
+       where status = 'Scheduled' and due_date <= current_date + interval '7 days';`
+    );
+    const { rows: uc } = await client.query(
+      `select count(*)::int as c
+       from clients
+       where updated_at::date = current_date;`
+    );
+    const { rows: nc } = await client.query(
+      `select count(*)::int as c
+       from clients
+       where created_at::date = current_date;`
+    );
+    const { rows: rt } = await client.query(
+      `select coalesce(round(avg(extract(epoch from (first_response_at - created_at)))/60,1), null) as min
+       from conversations
+       where created_at >= current_date;`
+    );
+    return {
+      todayMessages: tm[0]?.c ?? 0,
+      messageGrowth: "0", // fill in later using a daily rollup
+      avgResponseTime: rt[0]?.min ? `${rt[0].min} min` : null,
+      conversionRate: 0, // fill in from orders table if you have one
+      satisfaction: null, // NPS/CSAT later
+      pendingFollowups: nf[0]?.c ?? 0,
+      updatedClients: uc[0]?.c ?? 0,
+      newClients: nc[0]?.c ?? 0
+    };
+  } finally {
+    client.release();
+  }
+}
+
+If you’re on Prisma/Drizzle, I can hand you the same logic with your ORM—just tell me which one.
+
+3) Frontend: defensive rendering (no more crashes)
+
+Patch the stats card component so it never calls .toString() on undefined.
+
+// client/src/components/dashboard/StatsCard.tsx
+type Props = { label: string; value: number | string | null | undefined };
+
+export function StatsCard({ label, value }: Props) {
+  const safe = value ?? (typeof value === "number" ? 0 : "0");
+  return (
+    <div className="stat">
+      <div className="stat-title">{label}</div>
+      <div className="stat-value">{String(safe)}</div>
+    </div>
+  );
+}
+
+And when you render:
+
+<StatsCard label="Today Messages" value={stats?.todayMessages} />
+<StatsCard label="Pending Follow-ups" value={stats?.pendingFollowups} />
+// …etc
+
+(Optional dev-only) silence the Vite overlay:
+
+// vite.config.ts
+export default defineConfig({
+  server: { hmr: { overlay: false } }
+});
+
+
+⸻
+
+Make it advanced (so it helps you daily)
+
+A) SLA guard + breach highlights
+
+Backend flag:
+
+// add in getDashboardStats
+const { rows: sla } = await client.query(
+ `select count(*)::int as breaches
+  from conversations
+  where first_response_at is null
+    and now() - created_at > interval '24 hours';`
+);
+return { ...prev, slaBreaches: sla[0]?.breaches ?? 0 };
+
+Frontend: if slaBreaches > 0, show a red badge + link to a filtered list “Respond now”.
+
+B) “Next actions” smart list
+
+New endpoint /api/actions/next that returns:
+	•	follow-ups due today
+	•	hot leads (probability >= 70% from your Excel/VBA logic)
+	•	clients who interacted in last 48h but didn’t receive a follow-up
+
+router.get("/api/actions/next", async (_req, res) => {
+  const due = await getDueFollowupsToday();
+  const hot = await getHotLeads(70);   // your score logic
+  const dangling = await getDanglingConversations(48);
+  res.json({ due, hot, dangling });
+});
+
+C) Telegram power commands (works with your bot)
+	•	/status → calls /api/status, replies with a green/red summary
+	•	/due → sends today’s follow-ups as buttons
+	•	/lead <clientId> → pulls profile + last messages + recommended reply snippet
+
+I’ll wire your existing bot to these endpoints so you can manage from your phone.
+
+D) Daily rollups for charts
+
+Create a tiny table metrics_daily(date, messages, new_clients, conversions, avg_response_min) and a cron (or Replit’s Scheduler) to upsert yesterday’s metrics. This powers clean trend charts and a messageGrowth % that’s meaningful.
+
+E) Warning banner when a key is missing
+
+Call /api/status. If telegram: "inactive", show a dismissible banner:
+“Reminders disabled: set TELEGRAM_ADMIN_CHAT_ID”.
+
+F) Error boundary + skeletons
+
+Add a global React error boundary and skeleton loaders so UI never blanks—users (you!) always see a calm skeleton while requests resolve.
+
+⸻
+
+Quick test checklist (copy & run)
+
+Server
+
+curl -s http://localhost:5000/api/analytics/dashboard | jq
+curl -s http://localhost:5000/api/actions/next | jq
+curl -s http://localhost:5000/api/status | jq
+
+Expect: valid JSON with numbers/strings (no null unless by design).
+
+UI
+	•	Open dashboard → no overlay, no crash
+	•	Tiles show numbers (even zero) instead of breaking
+	•	If SLA breaches > 0 → red chip + “Respond now”
+
+Telegram
+	•	/status returns service status
+	•	/due returns today’s tasks
+	•	/lead AEVA_… returns a compact client card
+
+⸻
+
+What I still need from you (to wire everything perfectly)
+	•	Are you using Prisma, Drizzle, or node-postgres?
+	•	Names of your tables/columns for: messages, conversations, followups, clients, orders (if any).
+	•	Your bot’s webhook or polling setup (file path) so I can add /status, /due, /lead.
+	•	The path of your dashboard component file(s) to patch (if different from my guesses).
+
+Send me those 4 things (or paste the files), and I’ll hand you drop-in patches exactly matching your codebase.
