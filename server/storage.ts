@@ -20,11 +20,12 @@ import {
   type CodeAnalysisReport, type InsertCodeAnalysisReport,
   type Watch, type InsertWatch,
   type Faq, type InsertFaq,
+  type ActivityLog, type InsertActivityLog,
   users, clients, conversations, messages, followUps, appointments,
   interactions, activities, documents, tripPlans, aiConversations,
   systemSettings, deals, salesForecasts, leadScoringHistory,
   githubRepositories, selfEditingHistory, aiLearningDocuments,
-  codeAnalysisReports, watchCollection, faqDatabase
+  codeAnalysisReports, watchCollection, faqDatabase, activityLog
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from './db';
@@ -181,6 +182,11 @@ export interface IStorage {
   updateFaq(id: string, updates: Partial<Faq>): Promise<Faq>;
   deleteFaq(id: string): Promise<boolean>;
   incrementFaqUsage(id: string): Promise<Faq>;
+
+  // Activity Log operations (for real-time dashboard)
+  logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
+  getRecentActivities(limit?: number): Promise<ActivityLog[]>;
+  getActivitiesByEntity(entityType: string, entityId: string): Promise<ActivityLog[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1283,6 +1289,25 @@ export class MemStorage implements IStorage {
     this.faqs.set(id, faq);
     return faq;
   }
+
+  // Activity Log operations (for real-time dashboard) - MemStorage stubs
+  async logActivity(activity: InsertActivityLog): Promise<ActivityLog> {
+    const id = Date.now();
+    const newActivity: ActivityLog = {
+      ...activity,
+      id,
+      createdAt: new Date(),
+    };
+    return newActivity;
+  }
+
+  async getRecentActivities(limit: number = 50): Promise<ActivityLog[]> {
+    return [];
+  }
+
+  async getActivitiesByEntity(entityType: string, entityId: string): Promise<ActivityLog[]> {
+    return [];
+  }
 }
 
 // DatabaseStorage implementation using Drizzle ORM for persistent PostgreSQL storage
@@ -1961,6 +1986,27 @@ export class DatabaseStorage implements IStorage {
       .returning();
     if (result.length === 0) throw new Error('FAQ not found');
     return result[0];
+  }
+
+  // Activity Log operations (for real-time dashboard)
+  async logActivity(activity: InsertActivityLog): Promise<ActivityLog> {
+    const result = await db.insert(activityLog).values(activity).returning();
+    return result[0];
+  }
+
+  async getRecentActivities(limit: number = 50): Promise<ActivityLog[]> {
+    return await db.select().from(activityLog)
+      .orderBy(desc(activityLog.createdAt))
+      .limit(limit);
+  }
+
+  async getActivitiesByEntity(entityType: string, entityId: string): Promise<ActivityLog[]> {
+    return await db.select().from(activityLog)
+      .where(and(
+        eq(activityLog.entityType, entityType),
+        eq(activityLog.entityId, entityId)
+      ))
+      .orderBy(desc(activityLog.createdAt));
   }
 }
 
