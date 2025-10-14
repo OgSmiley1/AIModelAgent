@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean, jsonb, real } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, jsonb, real, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -612,3 +612,24 @@ export const insertMetricsDailySchema = createInsertSchema(metricsDaily).omit({
 
 export type InsertMetricsDaily = z.infer<typeof insertMetricsDailySchema>;
 export type MetricsDaily = typeof metricsDaily.$inferSelect;
+
+// Activity Log table for real-time dashboard updates
+export const activityLog = pgTable("activity_log", {
+  id: serial("id").primaryKey(),
+  action: text("action").notNull(), // "client_updated", "followup_created", "status_changed", etc.
+  entityType: text("entity_type").notNull(), // "client", "followup", "conversation", etc.
+  entityId: text("entity_id"), // ID of the affected entity
+  description: text("description").notNull(), // Human-readable description
+  details: text("details"), // JSON string with additional data
+  userId: text("user_id"), // Who performed the action
+  source: text("source").default("web"), // "web", "telegram", "api"
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertActivityLogSchema = createInsertSchema(activityLog).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type ActivityLog = typeof activityLog.$inferSelect;
