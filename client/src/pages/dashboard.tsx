@@ -12,7 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Bot, Send, Lightbulb, Download } from "lucide-react";
 import { WelcomeGuide } from "@/components/dashboard/welcome-guide";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { queryClient } from "@/lib/queryClient";
 import type { DashboardStats, LiveMessage, SystemAlert } from "@/types";
 
 export default function Dashboard() {
@@ -58,6 +60,11 @@ export default function Dashboard() {
       // Listen for stats updates
       on('stats_updated', (newStats: DashboardStats) => {
         // Stats will be updated by React Query refetch
+      });
+
+      // Listen for stats refresh trigger
+      on('stats_refresh', () => {
+        queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
       });
     }
   }, [connected, on]);
@@ -160,6 +167,9 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               )}
+              
+              {/* Activity Feed */}
+              <ActivityFeed />
               
               {/* Quick Actions Panel */}
               <Card className="luxury-card border-primary/20 bg-gradient-to-r from-primary/5 to-background">
