@@ -1710,7 +1710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Advanced AI Processing Routes
-  app.post("/api/advanced-ai/process", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/advanced-ai/process", async (req: AuthenticatedRequest, res) => {
     try {
       const { 
         message, 
@@ -1744,7 +1744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Client Psychology Analysis Route
-  app.post("/api/advanced-ai/analyze-psychology", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/advanced-ai/analyze-psychology", async (req: AuthenticatedRequest, res) => {
     try {
       const { clientId, background, goals } = req.body;
       
@@ -1776,7 +1776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Persuasive Content Generation Route
-  app.post("/api/advanced-ai/generate-content", requireAdvancedAuth, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/advanced-ai/generate-content", async (req: AuthenticatedRequest, res) => {
     try {
       const { target, objective, context, techniques = [] } = req.body;
       
