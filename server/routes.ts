@@ -43,14 +43,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const websocketService = initializeWebSocket(httpServer);
 
   // WhatsApp Webhook
-  app.get("/webhook/whatsapp", (req, res) => {
+  app.get("/webhook/whatsapp", async (req, res) => {
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
 
-    const verified = whatsAppService.verifyWebhook(mode as string, token as string, challenge as string);
-    if (verified === true) {
-      res.status(200).send(challenge);
+    const verified = await whatsAppService.verifyWebhook(mode as string, token as string, challenge as string);
+    if (verified !== null) {
+      res.status(200).send(verified);
     } else {
       res.status(403).send("Forbidden");
     }
@@ -1161,9 +1161,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analytics/dashboard", async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
-      res.json(stats);
+      // Ensure all required fields have safe defaults
+      res.json({
+        todayMessages: stats?.todayMessages ?? 0,
+        yesterdayMessages: stats?.yesterdayMessages ?? 0,
+        messageGrowth: stats?.messageGrowth ?? "0",
+        totalClients: stats?.totalClients ?? 0,
+        activeChats: stats?.activeChats ?? 0,
+        pendingFollowups: stats?.pendingFollowups ?? 0,
+        newClients: stats?.newClients ?? 0,
+        updatedClients: stats?.updatedClients ?? 0,
+        avgResponseTime: stats?.avgResponseTime ?? "N/A",
+        conversionRate: stats?.conversionRate ?? 0,
+        satisfaction: stats?.satisfaction ?? "N/A",
+        slaBreaches: stats?.slaBreaches ?? 0,
+      });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch dashboard stats" });
+      console.error("Dashboard stats error:", error);
+      // Return safe defaults on error
+      res.json({
+        todayMessages: 0,
+        yesterdayMessages: 0,
+        messageGrowth: "0",
+        totalClients: 0,
+        activeChats: 0,
+        pendingFollowups: 0,
+        newClients: 0,
+        updatedClients: 0,
+        avgResponseTime: "N/A",
+        conversionRate: 0,
+        satisfaction: "N/A",
+        slaBreaches: 0,
+      });
     }
   });
 
@@ -1173,6 +1202,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(analytics);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch client analytics" });
+    }
+  });
+
+  // System status endpoint
+  app.get("/api/status", (req, res) => {
+    try {
+      res.json({
+        telegram: !!process.env.TELEGRAM_ADMIN_CHAT_ID && !!process.env.TELEGRAM_BOT_TOKEN ? "active" : "inactive",
+        gemini: !!process.env.GOOGLE_API_KEY,
+        groq: !!process.env.GROQ_API_KEY,
+        database: !!process.env.DATABASE_URL,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch system status" });
+    }
+  });
+
+  // Next actions endpoint
+  app.get("/api/actions/next", async (req, res) => {
+    try {
+      const { getNextActions } = await import('./storage/stats');
+      const actions = await getNextActions();
+      res.json(actions);
+    } catch (error) {
+      console.error("Next actions error:", error);
+      res.json({ due: [], hot: [], dangling: [] });
     }
   });
 

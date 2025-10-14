@@ -10,15 +10,15 @@ export function StatsCards({ stats }: StatsCardsProps) {
   const cards = [
     {
       title: "Today's Messages",
-      value: stats.todayMessages.toString(),
+      value: String(stats?.todayMessages ?? 0),
       icon: Mail,
-      trend: `+${stats.messageGrowth}% from yesterday`,
+      trend: `+${stats?.messageGrowth ?? "0"}% from yesterday`,
       trendPositive: true,
       testId: "today-messages-card"
     },
     {
       title: "Response Time",
-      value: stats.avgResponseTime,
+      value: String(stats?.avgResponseTime ?? "N/A"),
       icon: Clock,
       trend: "Avg AI response time",
       trendPositive: true,
@@ -26,7 +26,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
     },
     {
       title: "Conversion Rate",
-      value: `${stats.conversionRate}%`,
+      value: `${stats?.conversionRate ?? 0}%`,
       icon: TrendingUp,
       trend: "+5% this week",
       trendPositive: true,
@@ -34,7 +34,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
     },
     {
       title: "Client Satisfaction",
-      value: stats.satisfaction,
+      value: String(stats?.satisfaction ?? "N/A"),
       icon: Star,
       trend: "Based on sentiment analysis",
       trendPositive: true,

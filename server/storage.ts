@@ -1629,8 +1629,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardStats(): Promise<any> {
-    // Placeholder - implement with aggregations
-    return {};
+    const { getDashboardStats: getStats } = await import('./storage/stats');
+    return await getStats();
   }
 
   async getClientAnalytics(clientId: string): Promise<any> {
