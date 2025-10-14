@@ -11,12 +11,13 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### October 14, 2025
-- **Advanced AI Authentication Fix**: Resolved 403 "Advanced AI processing failed" errors by removing requireAdvancedAuth middleware from processing routes
-  - Fixed routes: /api/advanced-ai/process, /api/advanced-ai/analyze-psychology, /api/advanced-ai/generate-content
+- **JWT Session Authentication Implemented**: Fixed Advanced AI 403 errors with secure cookie-based JWT authentication system
   - Login credentials: Smiley/Smiley@123jz at /api/auth/advanced-ai
-  - Current implementation: Frontend login protection only (no backend session persistence)
-  - Security consideration: Routes accessible without authentication after middleware removal
-  - E2E tested: Login successful, messages process without 403 errors, AI responses working correctly
+  - JWT tokens stored in httpOnly cookies (12-hour expiration, sameSite=lax)
+  - Protected routes: /api/advanced-ai/process, /api/advanced-ai/analyze-psychology, /api/advanced-ai/generate-content
+  - Security: Production requires ADVANCED_AI_JWT_SECRET env var (throws error if missing)
+  - Frontend mutations properly parse JSON responses for all Advanced AI endpoints
+  - E2E tested: Login creates JWT cookie, messages process successfully (200 OK), AI responses render correctly, no 403 errors
 - **Live Data Synchronization**: Fixed sidebar client count display to show real-time database count (463) instead of hardcoded value (287)
   - WebSocket integration ensures dashboard, sidebar, and activity feed update in real-time
   - Telegram bot commands (/stats, /due, /lead) all query database live with accurate counts
@@ -73,6 +74,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication and Authorization
 - **Session Management**: Connect-pg-simple for PostgreSQL-backed sessions
+- **Advanced AI JWT Auth**: Secure JWT-based authentication for Advanced AI features
+  - Token system: server/auth/token.ts with sign/verify functions
+  - httpOnly cookies (12-hour expiration, sameSite=lax, secure in production)
+  - Protected middleware: server/middleware/auth.ts (requireAdvancedAuth)
+  - Cookie parser middleware for JWT extraction from requests
 - **User System**: Built-in user management with role-based access
 - **API Security**: Express middleware for request validation and error handling
 
