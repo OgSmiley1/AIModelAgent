@@ -716,7 +716,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const client = await storage.updateClient(req.params.id, updates);
+      
+      // Log activity to activity_log table
+      const activity = await storage.logActivity({
+        action: "client_updated",
+        entityType: "client",
+        entityId: client.id,
+        description: `Updated client: ${client.name}`,
+        details: JSON.stringify({ updates, oldStatus: existingClient.status, newStatus: client.status }),
+        userId: req.body.actorId || "system",
+        source: "web"
+      });
+      
+      // Broadcast updates via WebSocket
       websocketService.broadcastClientUpdate(client);
+      websocketService.broadcast('activity_update', activity);
+      websocketService.broadcast('stats_refresh', { timestamp: new Date() });
+      
       res.json(client);
     } catch (error) {
       console.error('Client update error:', error);
@@ -800,7 +816,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const client = await storage.updateClient(req.params.id, updates);
+      
+      // Log activity to activity_log table
+      const activity = await storage.logActivity({
+        action: "client_updated",
+        entityType: "client",
+        entityId: client.id,
+        description: `Updated client: ${client.name}`,
+        details: JSON.stringify({ updates, oldStatus: existingClient.status, newStatus: client.status }),
+        userId: req.body.actorId || "system",
+        source: "web"
+      });
+      
+      // Broadcast updates via WebSocket
       websocketService.broadcastClientUpdate(client);
+      websocketService.broadcast('activity_update', activity);
+      websocketService.broadcast('stats_refresh', { timestamp: new Date() });
+      
       res.json(client);
     } catch (error) {
       console.error('Client update error:', error);
@@ -1229,6 +1261,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Next actions error:", error);
       res.json({ due: [], hot: [], dangling: [] });
+    }
+  });
+
+  // Activity feed endpoint for real-time dashboard updates
+  app.get("/api/activities/recent", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const activities = await storage.getRecentActivities(limit);
+      res.json(activities);
+    } catch (error) {
+      console.error("Activities error:", error);
+      res.status(500).json({ error: "Failed to fetch activities" });
     }
   });
 
