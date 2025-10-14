@@ -2334,6 +2334,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Telegram bot status endpoint
+  app.get("/api/telegram/status", async (req, res) => {
+    try {
+      const botActive = process.env.TELEGRAM_BOT_TOKEN ? true : false;
+      const aiActive = process.env.GOOGLE_API_KEY ? true : false;
+      res.json({
+        active: botActive,
+        configured: botActive && aiActive,
+        features: {
+          naturalLanguage: aiActive,
+          commands: botActive
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get bot status" });
+    }
+  });
+
   // Register export routes for data export to ChatGPT/Manus
   registerExportRoutes(app);
 
