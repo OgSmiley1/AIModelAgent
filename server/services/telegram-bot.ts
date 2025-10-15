@@ -4,12 +4,47 @@ import { storage } from '../storage';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+const AMBASSADOR_PASSWORD = '12001';
+const VALID_AMBASSADORS = ['Maaz', 'Riham', 'Asma'];
+
+type Ambassador = 'Maaz' | 'Riham' | 'Asma';
 
 let bot: TelegramBot | null = null;
 let genai: InstanceType<typeof GoogleGenAI> | null = null;
 
 // Track last mentioned client per chat for pronoun resolution
 const chatContext = new Map<number, { lastClientId?: string, lastClientName?: string }>();
+
+// Session management for authentication flow
+interface ChatSession {
+  step?: 'askName' | 'askPassword';
+  candidateAmbassador?: string;
+}
+const chatSessions = new Map<number, ChatSession>();
+
+// Helper functions for ambassador authentication
+async function getChatAmbassador(chatId: number): Promise<Ambassador | null> {
+  const ambassador = await storage.getTelegramAmbassador(chatId);
+  return ambassador?.ambassador as Ambassador || null;
+}
+
+async function setChatAmbassador(chatId: number, ambassador: Ambassador): Promise<void> {
+  await storage.setTelegramAmbassador(chatId, ambassador);
+}
+
+// Middleware to require authentication
+async function requireAuth(chatId: number): Promise<Ambassador | false> {
+  const ambassador = await getChatAmbassador(chatId);
+  if (!ambassador) {
+    await bot?.sendMessage(
+      chatId,
+      '🔒 Please authenticate first.\n\nWho are you? (Maaz / Riham / Asma)'
+    );
+    chatSessions.set(chatId, { step: 'askName' });
+    return false;
+  }
+  return ambassador;
+}
 
 export function initializeTelegramBot() {
   if (!TELEGRAM_BOT_TOKEN) {
@@ -28,19 +63,26 @@ export function initializeTelegramBot() {
   console.log('🤖 Telegram bot initialized successfully');
 
   // Command handlers
-  bot.onText(/\/start/, (msg) => {
+  bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
-    bot?.sendMessage(
-      chatId,
-      `Welcome to Vacheron Constantin CRM Bot! 🕐\n\n` +
-      `I can help you manage clients using natural language. Try:\n\n` +
-      `📋 "Show me all clients with status Confirmed"\n` +
-      `👤 "Tell me about Client X"\n` +
-      `✏️ "Update Client Y's status to Sold"\n` +
-      `📞 "Create a follow-up for Client Z tomorrow at 2pm"\n` +
-      `📊 "How many clients are in Hesitant status?"\n\n` +
-      `Just send me your request!`
-    );
+    const ambassador = await getChatAmbassador(chatId);
+    
+    if (ambassador) {
+      await bot?.sendMessage(
+        chatId,
+        `Welcome back, ${ambassador}! ✨\n\n` +
+        `You're already verified. Use /help to see commands.\n` +
+        `Use /switch to change identity.`
+      );
+    } else {
+      await bot?.sendMessage(
+        chatId,
+        `Welcome to Vacheron Constantin CRM Bot! 🕐\n\n` +
+        `Please identify yourself.\n\n` +
+        `Who are you? (Maaz / Riham / Asma)`
+      );
+      chatSessions.set(chatId, { step: 'askName' });
+    }
   });
 
   bot.onText(/\/help/, (msg) => {
@@ -48,15 +90,15 @@ export function initializeTelegramBot() {
     bot?.sendMessage(
       chatId,
       `🤖 *Vacheron Constantin CRM Bot Commands:*\n\n` +
+      `*Authentication:*\n` +
+      `/switch - Change your identity (Maaz/Riham/Asma)\n\n` +
       `*Client Management:*\n` +
-      `/stats - View CRM statistics\n` +
-      `/list_vip - List VIP clients\n` +
-      `/list_confirmed - List confirmed clients\n` +
-      `/list_sold - List sold clients\n` +
-      `/list_hesitant - List hesitant clients\n` +
-      `/list_callback - List clients needing callback\n` +
-      `/clients_for <ambassador> - List clients by ambassador\n` +
-      `Example: /clients_for Maaz\n\n` +
+      `/stats - View YOUR client statistics\n` +
+      `/list_vip - List YOUR VIP clients\n` +
+      `/list_confirmed - List YOUR confirmed clients\n` +
+      `/list_sold - List YOUR sold clients\n` +
+      `/list_hesitant - List YOUR hesitant clients\n` +
+      `/list_callback - List YOUR clients needing callback\n\n` +
       `*Watch Catalog:*\n` +
       `/watch <reference> - Get watch details\n` +
       `/price <reference> - Get watch price & availability\n` +
@@ -67,13 +109,13 @@ export function initializeTelegramBot() {
       `Example: /faq repair turnaround\n\n` +
       `*Power Commands:*\n` +
       `/status - Check system status\n` +
-      `/due - See today's follow-ups\n` +
-      `/lead <clientId> - Get client details\n` +
+      `/due - See YOUR follow-ups today\n` +
+      `/lead <clientId> - Get YOUR client details\n` +
       `Example: /lead 12345\n\n` +
       `*Natural Language (AI-Powered):*\n` +
-      `📋 "Show me all VIP clients"\n` +
-      `👤 "Tell me about Client #108884411"\n` +
-      `🔍 "Find client 108884411"\n` +
+      `📋 "Show me all my VIP clients"\n` +
+      `👤 "Tell me about my Client #108884411"\n` +
+      `🔍 "Find my client 108884411"\n` +
       `✏️ "Update his status to Sold"\n` +
       `📞 "Remind me to call Client Y tomorrow"\n` +
       `❌ "Close the request for client Z"\n` +
@@ -83,6 +125,13 @@ export function initializeTelegramBot() {
       `Just send me your request!`,
       { parse_mode: 'Markdown' }
     );
+  });
+
+  // Switch command - change ambassador identity
+  bot.onText(/\/switch/, async (msg) => {
+    const chatId = msg.chat.id;
+    await bot?.sendMessage(chatId, '🔄 Okay, who are you now?\n\n(Maaz / Riham / Asma)');
+    chatSessions.set(chatId, { step: 'askName' });
   });
 
   // Simple command handlers that don't need AI
@@ -524,6 +573,45 @@ export function initializeTelegramBot() {
 
     const chatId = msg.chat.id;
     const userMessage = msg.text || '';
+
+    // Handle authentication flow
+    const session = chatSessions.get(chatId);
+    if (session) {
+      if (session.step === 'askName') {
+        const name = userMessage.trim();
+        const normalized = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+        
+        if (!VALID_AMBASSADORS.includes(normalized)) {
+          await bot?.sendMessage(chatId, '❌ Please reply with: Maaz, Riham, or Asma');
+          return;
+        }
+        
+        session.candidateAmbassador = normalized;
+        session.step = 'askPassword';
+        chatSessions.set(chatId, session);
+        await bot?.sendMessage(chatId, '🔐 Password?');
+        return;
+      }
+      
+      if (session.step === 'askPassword') {
+        if (userMessage.trim() !== AMBASSADOR_PASSWORD) {
+          await bot?.sendMessage(chatId, '❌ Incorrect password. Try again.\n\nPassword?');
+          return;
+        }
+        
+        const ambassador = session.candidateAmbassador as Ambassador;
+        await setChatAmbassador(chatId, ambassador);
+        chatSessions.delete(chatId);
+        
+        await bot?.sendMessage(
+          chatId,
+          `✅ Verified as ${ambassador}!\n\n` +
+          `Your data is now scoped to your clients only.\n` +
+          `Use /help to see available commands.`
+        );
+        return;
+      }
+    }
 
     try {
       console.log('🤖 [Telegram Bot] Processing natural language message:', userMessage);
