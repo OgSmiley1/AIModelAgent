@@ -172,15 +172,18 @@ export function initializeTelegramBot() {
   bot.onText(/\/list_confirmed/, async (msg) => {
     const chatId = msg.chat.id;
     try {
-      const clients = await storage.getAllClients();
+      const ambassador = await requireAuth(chatId);
+      if (!ambassador) return;
+      
+      const clients = await storage.getClientsByOwner(ambassador);
       const confirmed = clients.filter(c => c.status === 'confirmed').slice(0, 20);
       
       if (confirmed.length === 0) {
-        await bot?.sendMessage(chatId, 'No confirmed clients found.');
+        await bot?.sendMessage(chatId, `No confirmed clients found for ${ambassador}.`);
         return;
       }
       
-      let response = `✅ *Confirmed Clients* (${confirmed.length}):\n\n`;
+      let response = `✅ *${ambassador}'s Confirmed Clients* (${confirmed.length}):\n\n`;
       confirmed.forEach((client, idx) => {
         response += `${idx + 1}. ${client.name}\n`;
         if (client.phone) response += `   📞 ${client.phone}\n`;
@@ -196,15 +199,18 @@ export function initializeTelegramBot() {
   bot.onText(/\/list_sold/, async (msg) => {
     const chatId = msg.chat.id;
     try {
-      const clients = await storage.getAllClients();
+      const ambassador = await requireAuth(chatId);
+      if (!ambassador) return;
+      
+      const clients = await storage.getClientsByOwner(ambassador);
       const sold = clients.filter(c => c.status === 'sold').slice(0, 20);
       
       if (sold.length === 0) {
-        await bot?.sendMessage(chatId, 'No sold clients found.');
+        await bot?.sendMessage(chatId, `No sold clients found for ${ambassador}.`);
         return;
       }
       
-      let response = `💰 *Sold Clients* (${sold.length}):\n\n`;
+      let response = `💰 *${ambassador}'s Sold Clients* (${sold.length}):\n\n`;
       sold.forEach((client, idx) => {
         response += `${idx + 1}. ${client.name}\n`;
         if (client.phone) response += `   📞 ${client.phone}\n`;
@@ -220,15 +226,18 @@ export function initializeTelegramBot() {
   bot.onText(/\/list_hesitant/, async (msg) => {
     const chatId = msg.chat.id;
     try {
-      const clients = await storage.getAllClients();
+      const ambassador = await requireAuth(chatId);
+      if (!ambassador) return;
+      
+      const clients = await storage.getClientsByOwner(ambassador);
       const hesitant = clients.filter(c => c.status === 'hesitant').slice(0, 20);
       
       if (hesitant.length === 0) {
-        await bot?.sendMessage(chatId, 'No hesitant clients found.');
+        await bot?.sendMessage(chatId, `No hesitant clients found for ${ambassador}.`);
         return;
       }
       
-      let response = `🤔 *Hesitant Clients* (${hesitant.length}):\n\n`;
+      let response = `🤔 *${ambassador}'s Hesitant Clients* (${hesitant.length}):\n\n`;
       hesitant.forEach((client, idx) => {
         response += `${idx + 1}. ${client.name}\n`;
         if (client.phone) response += `   📞 ${client.phone}\n`;
@@ -244,15 +253,18 @@ export function initializeTelegramBot() {
   bot.onText(/\/list_callback/, async (msg) => {
     const chatId = msg.chat.id;
     try {
-      const clients = await storage.getAllClients();
+      const ambassador = await requireAuth(chatId);
+      if (!ambassador) return;
+      
+      const clients = await storage.getClientsByOwner(ambassador);
       const callback = clients.filter(c => c.status === 'requested_callback').slice(0, 20);
       
       if (callback.length === 0) {
-        await bot?.sendMessage(chatId, 'No clients requesting callback.');
+        await bot?.sendMessage(chatId, `No clients requesting callback for ${ambassador}.`);
         return;
       }
       
-      let response = `📞 *Clients Needing Callback* (${callback.length}):\n\n`;
+      let response = `📞 *${ambassador}'s Clients Needing Callback* (${callback.length}):\n\n`;
       callback.forEach((client, idx) => {
         response += `${idx + 1}. ${client.name}\n`;
         if (client.phone) response += `   📞 ${client.phone}\n`;
@@ -268,15 +280,18 @@ export function initializeTelegramBot() {
   bot.onText(/\/list_vip/, async (msg) => {
     const chatId = msg.chat.id;
     try {
-      const clients = await storage.getAllClients();
+      const ambassador = await requireAuth(chatId);
+      if (!ambassador) return;
+      
+      const clients = await storage.getClientsByOwner(ambassador);
       const vips = clients.filter(c => c.clientSegment === 'VIP' || c.status === 'vip' || c.priority === 'vip').slice(0, 20);
       
       if (vips.length === 0) {
-        await bot?.sendMessage(chatId, 'No VIP clients found.');
+        await bot?.sendMessage(chatId, `No VIP clients found for ${ambassador}.`);
         return;
       }
       
-      let response = `⭐ *VIP Clients* (${vips.length}):\n\n`;
+      let response = `⭐ *${ambassador}'s VIP Clients* (${vips.length}):\n\n`;
       vips.forEach((client, idx) => {
         response += `${idx + 1}. ${client.name}\n`;
         if (client.phone) response += `   📞 ${client.phone}\n`;
@@ -434,27 +449,33 @@ export function initializeTelegramBot() {
 
   bot.onText(/\/clients_for (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
-    const ambassador = match?.[1];
+    const requestedAmbassador = match?.[1];
     
-    if (!ambassador) {
+    if (!requestedAmbassador) {
       await bot?.sendMessage(chatId, 'Please provide ambassador name. Example: /clients_for Maaz');
       return;
     }
     
     try {
-      const clients = await storage.getAllClients();
-      const filtered = clients.filter(c => 
-        c.salesAssociate?.toLowerCase().includes(ambassador.toLowerCase()) ||
-        c.boutiqueSalesAssociateName?.toLowerCase().includes(ambassador.toLowerCase())
-      );
+      // Require authentication
+      const authenticatedAmbassador = await requireAuth(chatId);
+      if (!authenticatedAmbassador) return;
       
-      if (filtered.length === 0) {
-        await bot?.sendMessage(chatId, `No clients found for ambassador "${ambassador}"`);
+      // Security: Only allow viewing own clients
+      if (requestedAmbassador.toLowerCase() !== authenticatedAmbassador.toLowerCase()) {
+        await bot?.sendMessage(chatId, `🔒 You can only view your own clients. Use /stats to see ${authenticatedAmbassador}'s clients.`);
         return;
       }
       
-      let response = `👥 *Clients for ${ambassador}* (${filtered.length}):\n\n`;
-      filtered.slice(0, 20).forEach((client, idx) => {
+      const clients = await storage.getClientsByOwner(authenticatedAmbassador);
+      
+      if (clients.length === 0) {
+        await bot?.sendMessage(chatId, `No clients found for ${authenticatedAmbassador}`);
+        return;
+      }
+      
+      let response = `👥 *${authenticatedAmbassador}'s Clients* (${clients.length}):\n\n`;
+      clients.slice(0, 20).forEach((client, idx) => {
         response += `${idx + 1}. ${client.name}\n`;
         response += `   Status: ${client.status}\n`;
         if (client.clientSegment) response += `   Segment: ${client.clientSegment}\n`;
@@ -462,8 +483,8 @@ export function initializeTelegramBot() {
         response += `\n`;
       });
       
-      if (filtered.length > 20) {
-        response += `_...and ${filtered.length - 20} more_`;
+      if (clients.length > 20) {
+        response += `_...and ${clients.length - 20} more_`;
       }
       
       await safeSendMessage(chatId, response, { parse_mode: 'Markdown' });
@@ -644,11 +665,15 @@ export function initializeTelegramBot() {
     try {
       console.log('🤖 [Telegram Bot] Processing natural language message:', userMessage);
       
+      // Require authentication for natural language processing
+      const ambassador = await requireAuth(chatId);
+      if (!ambassador) return;
+      
       // Send typing indicator
       await bot?.sendChatAction(chatId, 'typing');
 
-      // Process the request using AI with chat context
-      const response = await processNaturalLanguageRequest(userMessage, chatId);
+      // Process the request using AI with chat context (scoped to ambassador)
+      const response = await processNaturalLanguageRequest(userMessage, chatId, ambassador);
 
       // Send response (safely handles long messages)
       await safeSendMessage(chatId, response, {
@@ -712,14 +737,14 @@ async function safeSendMessage(chatId: number, text: string, options?: any): Pro
   }
 }
 
-async function processNaturalLanguageRequest(message: string, chatId: number): Promise<string> {
+async function processNaturalLanguageRequest(message: string, chatId: number, ambassador: string): Promise<string> {
   if (!genai) {
     return '⚠️ AI processing is not available. Please set up Google API key.';
   }
 
   try {
-    // Get all clients for context
-    const clients = await storage.getAllClients();
+    // Get clients scoped to authenticated ambassador
+    const clients = await storage.getClientsByOwner(ambassador);
     
     // Get or initialize chat context
     const context = chatContext.get(chatId) || {};
@@ -759,6 +784,8 @@ When user says "his", "her", "them", "the client", "this client", or "the reques
     
     // Use Gemini to understand the intent and extract parameters
     const systemPrompt = `You are an AI assistant for Vacheron Constantin luxury watch CRM. Analyze user requests and execute them.
+
+IMPORTANT: You are assisting ${ambassador}. All client data shown is ONLY their clients (primaryOwner or salesAssociate = ${ambassador}). You cannot access other ambassadors' clients.
 
 UNDERSTANDING REQUESTS:
 - "Find client 108884411" or "Tell me about 108884411" → Search by name/phone/ID
