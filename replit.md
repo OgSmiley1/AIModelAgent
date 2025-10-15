@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 15, 2025
+- **Telegram Ambassador Authentication Implemented**: Added secure session-based access control for Telegram bot with ambassador-scoped data visibility
+  - Authentication flow: /start → name prompt (Maaz/Riham/Asma) → password "12001" → chat-to-ambassador binding
+  - Database: telegram_ambassadors table tracks chat ID to ambassador mappings with boundAt timestamp
+  - Session management: chatSessions Map maintains authentication state and multi-step auth flow
+  - Data scoping: All commands filter clients by primaryOwner/salesAssociate matching authenticated ambassador
+  - Secured commands: /stats, /due, /lead, /list_confirmed, /list_sold, /list_hesitant, /list_callback, /list_vip, /clients_for
+  - Natural language processing: AI requests require authentication and use scoped client data (getClientsByOwner)
+  - /switch command: Allows ambassadors to change identity by re-authenticating
+  - Security verified: No unauthenticated access, no data leakage, proper scoping on all pathways
+  - Storage methods: getClientsByOwner() and getFollowUpsByOwner() filter by ambassador ownership
+
 ### October 14, 2025
 - **JWT Session Authentication Implemented**: Fixed Advanced AI 403 errors with secure cookie-based JWT authentication system
   - Login credentials: Smiley/Smiley@123jz at /api/auth/advanced-ai
