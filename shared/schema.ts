@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean, jsonb, real, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, jsonb, real, serial, bigint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -633,3 +633,19 @@ export const insertActivityLogSchema = createInsertSchema(activityLog).omit({
 
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type ActivityLog = typeof activityLog.$inferSelect;
+
+// Telegram Ambassadors table for chat-to-ambassador binding
+export const telegramAmbassadors = pgTable("telegram_ambassadors", {
+  chatId: bigint("chat_id", { mode: "number" }).primaryKey(),
+  ambassador: text("ambassador").notNull(), // Maaz, Riham, or Asma
+  boundAt: timestamp("bound_at").defaultNow(),
+});
+
+export const insertTelegramAmbassadorSchema = createInsertSchema(telegramAmbassadors).omit({
+  boundAt: true,
+}).extend({
+  ambassador: z.enum(["Maaz", "Riham", "Asma"]),
+});
+
+export type InsertTelegramAmbassador = z.infer<typeof insertTelegramAmbassadorSchema>;
+export type TelegramAmbassador = typeof telegramAmbassadors.$inferSelect;

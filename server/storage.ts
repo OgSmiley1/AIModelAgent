@@ -21,11 +21,13 @@ import {
   type Watch, type InsertWatch,
   type Faq, type InsertFaq,
   type ActivityLog, type InsertActivityLog,
+  type TelegramAmbassador, type InsertTelegramAmbassador,
   users, clients, conversations, messages, followUps, appointments,
   interactions, activities, documents, tripPlans, aiConversations,
   systemSettings, deals, salesForecasts, leadScoringHistory,
   githubRepositories, selfEditingHistory, aiLearningDocuments,
-  codeAnalysisReports, watchCollection, faqDatabase, activityLog
+  codeAnalysisReports, watchCollection, faqDatabase, activityLog,
+  telegramAmbassadors
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from './db';
@@ -187,6 +189,12 @@ export interface IStorage {
   logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
   getRecentActivities(limit?: number): Promise<ActivityLog[]>;
   getActivitiesByEntity(entityType: string, entityId: string): Promise<ActivityLog[]>;
+
+  // Telegram Ambassador operations (for bot authentication and scoping)
+  getTelegramAmbassador(chatId: number): Promise<TelegramAmbassador | undefined>;
+  setTelegramAmbassador(chatId: number, ambassador: string): Promise<TelegramAmbassador>;
+  getClientsByOwner(owner: string): Promise<Client[]>;
+  getFollowUpsByOwner(owner: string): Promise<FollowUp[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2007,6 +2015,51 @@ export class DatabaseStorage implements IStorage {
         eq(activityLog.entityId, entityId)
       ))
       .orderBy(desc(activityLog.createdAt));
+  }
+
+  // Telegram Ambassador operations (for bot authentication and scoping)
+  async getTelegramAmbassador(chatId: number): Promise<TelegramAmbassador | undefined> {
+    const result = await db.select().from(telegramAmbassadors)
+      .where(eq(telegramAmbassadors.chatId, chatId))
+      .limit(1);
+    return result[0];
+  }
+
+  async setTelegramAmbassador(chatId: number, ambassador: string): Promise<TelegramAmbassador> {
+    const result = await db.insert(telegramAmbassadors)
+      .values({ chatId, ambassador })
+      .onConflictDoUpdate({
+        target: telegramAmbassadors.chatId,
+        set: { ambassador, boundAt: new Date() }
+      })
+      .returning();
+    return result[0];
+  }
+
+  async getClientsByOwner(owner: string): Promise<Client[]> {
+    return await db.select().from(clients)
+      .where(or(
+        eq(clients.salesAssociate, owner),
+        eq(clients.primaryOwner, owner)
+      ));
+  }
+
+  async getFollowUpsByOwner(owner: string): Promise<FollowUp[]> {
+    // First get all client IDs for this owner
+    const ownerClients = await this.getClientsByOwner(owner);
+    const clientIds = ownerClients.map(c => c.id);
+    
+    if (clientIds.length === 0) return [];
+    
+    // Then get follow-ups for those clients
+    return await db.select().from(followUps)
+      .where(
+        and(
+          drizzleSql`${followUps.clientId} = ANY(${clientIds})`,
+          eq(followUps.completed, false)
+        )
+      )
+      .orderBy(followUps.scheduledFor);
   }
 }
 
