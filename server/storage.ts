@@ -1316,6 +1316,33 @@ export class MemStorage implements IStorage {
   async getActivitiesByEntity(entityType: string, entityId: string): Promise<ActivityLog[]> {
     return [];
   }
+
+  // Telegram Ambassador operations (MemStorage stubs - not used in production)
+  async getTelegramAmbassador(chatId: number): Promise<TelegramAmbassador | undefined> {
+    return undefined;
+  }
+
+  async setTelegramAmbassador(chatId: number, ambassador: string): Promise<TelegramAmbassador> {
+    return {
+      chatId,
+      ambassador,
+      boundAt: new Date()
+    };
+  }
+
+  async getClientsByOwner(owner: string): Promise<Client[]> {
+    return Array.from(this.clients.values()).filter(c => 
+      c.salesAssociate === owner || c.primaryOwner === owner
+    );
+  }
+
+  async getFollowUpsByOwner(owner: string): Promise<FollowUp[]> {
+    const ownerClients = await this.getClientsByOwner(owner);
+    const clientIds = ownerClients.map(c => c.id);
+    return Array.from(this.followUps.values()).filter(f => 
+      clientIds.includes(f.clientId as string) && !f.completed
+    );
+  }
 }
 
 // DatabaseStorage implementation using Drizzle ORM for persistent PostgreSQL storage

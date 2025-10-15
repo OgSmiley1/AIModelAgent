@@ -137,8 +137,11 @@ export function initializeTelegramBot() {
   // Simple command handlers that don't need AI
   bot.onText(/\/stats/, async (msg) => {
     const chatId = msg.chat.id;
+    const ambassador = await requireAuth(chatId);
+    if (!ambassador) return;
+    
     try {
-      const clients = await storage.getAllClients();
+      const clients = await storage.getClientsByOwner(ambassador);
       const stats = {
         total: clients.length,
         requested_callback: clients.filter(c => c.status === 'requested_callback').length,
@@ -150,7 +153,7 @@ export function initializeTelegramBot() {
         vip: clients.filter(c => c.status === 'vip').length,
       };
       
-      let response = `📊 *CRM Statistics*\n\n`;
+      let response = `📊 *${ambassador}'s Client Statistics*\n\n`;
       response += `Total Clients: ${stats.total}\n\n`;
       response += `📞 Requested Callback: ${stats.requested_callback}\n`;
       response += `✅ Confirmed: ${stats.confirmed}\n`;
@@ -497,21 +500,33 @@ export function initializeTelegramBot() {
 
   bot.onText(/\/due/, async (msg) => {
     const chatId = msg.chat.id;
+    const ambassador = await requireAuth(chatId);
+    if (!ambassador) return;
     
     try {
-      const { getDueFollowupsToday } = await import('../storage/stats');
-      const dueFollowups = await getDueFollowupsToday();
+      const allFollowups = await storage.getFollowUpsByOwner(ambassador);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const dueFollowups = allFollowups.filter(f => {
+        const scheduledDate = new Date(f.scheduledFor);
+        return scheduledDate >= today && scheduledDate < tomorrow;
+      });
       
       if (dueFollowups.length === 0) {
-        await bot?.sendMessage(chatId, '✅ No follow-ups due today!');
+        await bot?.sendMessage(chatId, `✅ No follow-ups due today for ${ambassador}!`);
         return;
       }
       
-      let response = `📋 *Follow-ups Due Today* (${dueFollowups.length}):\n\n`;
+      let response = `📋 *${ambassador}'s Follow-ups Due Today* (${dueFollowups.length}):\n\n`;
       dueFollowups.slice(0, 15).forEach((followup, idx) => {
+        const time = new Date(followup.scheduledFor).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         response += `${idx + 1}. `;
         if (followup.type) response += `${followup.type} - `;
-        if (followup.notes) response += `${followup.notes.substring(0, 50)}${followup.notes.length > 50 ? '...' : ''}`;
+        if (followup.description) response += `${followup.description.substring(0, 50)}${followup.description.length > 50 ? '...' : ''}`;
+        response += ` (${time})`;
         response += `\n`;
       });
       
@@ -528,6 +543,9 @@ export function initializeTelegramBot() {
 
   bot.onText(/\/lead (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
+    const ambassador = await requireAuth(chatId);
+    if (!ambassador) return;
+    
     const clientId = match?.[1];
     
     if (!clientId) {
@@ -543,9 +561,19 @@ export function initializeTelegramBot() {
         return;
       }
       
+      // Check if this client belongs to the ambassador
+      const ownerClients = await storage.getClientsByOwner(ambassador);
+      const isOwner = ownerClients.some(c => c.id === client.id);
+      
+      if (!isOwner) {
+        await bot?.sendMessage(chatId, `❌ Client "${clientId}" not found (or not yours)`);
+        return;
+      }
+      
       let response = `👤 *Client Profile*\n\n`;
       response += `Name: ${client.name}\n`;
       response += `Status: ${client.status}\n`;
+      response += `Owner: ${client.salesAssociate || client.primaryOwner || 'Unassigned'}\n`;
       if (client.leadScore) response += `Lead Score: ${client.leadScore}/100\n`;
       if (client.conversionProbability) response += `Conversion Probability: ${(client.conversionProbability * 100).toFixed(0)}%\n`;
       if (client.interests) response += `Interests: ${client.interests}\n`;
