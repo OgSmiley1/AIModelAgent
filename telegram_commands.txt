@@ -1,0 +1,17 @@
+start - Start the bot and authenticate
+help - Show all available commands
+switch - Change your identity (Maaz/Riham/Asma)
+stats - View YOUR client statistics
+list_vip - List YOUR VIP clients
+list_confirmed - List YOUR confirmed clients
+list_sold - List YOUR sold clients
+list_hesitant - List YOUR hesitant clients
+list_callback - List YOUR clients needing callback
+watch - Get watch details (e.g., /watch 4500V)
+price - Get watch price & availability
+available - List all available watches
+faq - Search FAQ database
+status - Check system status
+due - See YOUR follow-ups today
+lead - Get YOUR client details (e.g., /lead 12345)
+
